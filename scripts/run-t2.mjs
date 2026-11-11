@@ -10,17 +10,18 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 function run(cmd, args, cwd = process.cwd()) {
-  const full = [cmd, ...args].join(" ");
+  const escaped = args.map((a) => (/\s/.test(a) ? `"${a}"` : a));
+  const full = [cmd, ...escaped].join(" ");
   const res = spawnSync(full, { stdio: "inherit", shell: true, cwd });
   if (res.status !== 0) process.exit(res.status ?? 1);
 }
 
-function collectFiles(dir, extRegex, acc = []) {
+function collectFiles(dir, extRegex, acc = [], baseDir = dir) {
   if (!existsSync(dir)) return acc;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === "node_modules" || entry.name === ".expo" || entry.name === ".git") continue;
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) collectFiles(full, extRegex, acc);
+    if (entry.isDirectory()) collectFiles(full, extRegex, acc, baseDir);
     else if (extRegex.test(entry.name)) acc.push(full);
   }
   return acc;
@@ -38,15 +39,16 @@ for (const s of scripts) {
 const fnDir = join(process.cwd(), "supabase", "functions");
 const denoFiles = collectFiles(fnDir, /\.ts$/);
 if (denoFiles.length > 0) {
-  console.log(`[T2] Executando deno lint & check em ${denoFiles.length} arquivo(s)...`);
+  const relFiles = denoFiles.map((f) => f.slice(fnDir.length + 1).replace(/\\/g, "/"));
+  console.log(`[T2] Executando deno lint & check em ${relFiles.length} arquivo(s)...`);
   try {
     execSync("deno --version", { stdio: "ignore" });
   } catch {
     console.error("[T2] ERRO: deno não encontrado no PATH.");
     process.exit(1);
   }
-  run("deno", ["lint", ...denoFiles]);
-  run("deno", ["check", ...denoFiles]);
+  run("deno", ["lint", ...relFiles], fnDir);
+  run("deno", ["check", ...relFiles], fnDir);
 } else {
   console.log("[T2] supabase/functions sem arquivos .ts ainda (serão verificados a partir da Fase 4).");
 }

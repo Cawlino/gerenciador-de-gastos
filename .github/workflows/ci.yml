@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-and-static:
-    name: T1 Segurança & T2 Estática
+    name: T1 Segurança · T2 Estática · T3 Unitário Deno
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +37,11 @@ jobs:
       - name: T2 - Estática (raiz / supabase / mobile)
         run: npm run test:t2
 
-  database-pgtap:
-    name: T4 Banco de Dados (pgTAP)
+      - name: T3 - Testes unitários Edge Functions (Deno)
+        run: npm run test:t3
+
+  database-and-integration:
+    name: T4 Banco de Dados (pgTAP) · T5 Integração API
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +50,10 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - uses: supabase/setup-cli@v1
         with:
@@ -60,3 +67,6 @@ jobs:
 
       - name: T4 - Banco de Dados (pgTAP)
         run: npm run test:t4
+
+      - name: T5 - Integração Edge Functions + Mock Pluggy v2
+        run: npm run test:t5
