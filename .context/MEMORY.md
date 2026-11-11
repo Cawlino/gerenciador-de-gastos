@@ -11,13 +11,20 @@ App Android pessoal para controle de gastos, conectado à conta corrente e cart�
 
 ## Mapa de pastas
 - `.context/` e `AGENTS.md` — memória persistente e ADRs
-- `.github/workflows/ci.yml` — CI (`T1–T5`)
-- `docs/` — `SETUP.md` e `test-reports/` (`fase-02.md` .. `fase-04.md`)
+- `.github/workflows/ci.yml` — CI (`T1–T3, T7` em `security-and-static` + `T4–T5` em `database-and-integration`)
+- `docs/` — `SETUP.md` e `test-reports/` (`fase-02.md` .. `fase-05.md`)
 - `fixtures/synthetic/` — fixtures sintéticas geradas por `scripts/gen-fixtures.mjs`
-- `scripts/` — `test-all.mjs`, `run-t1..t6.mjs`, `check-pii.mjs`, `gen-fixtures.mjs`
+- `scripts/` — `test-all.mjs`, `run-t1..t7.mjs`, `check-pii.mjs`, `gen-fixtures.mjs`
 - `supabase/` — config, migrations (`0001_init`, `0002_rules`, `0003_cron`), `seed.sql` (130 categorias Pluggy PT-BR), pgTAP (`tests/`), `functions/` (`api`, `pluggy-webhook`, `_shared`, `_mock`)
 - `tests/` — `integration/` (Vitest T5) e `contract/` (Vitest T6)
-- `mobile/` — app Expo Android
+- `mobile/` — app Expo Android (`app/`, `src/theme/`, `src/shaders/`, `src/utils/`, `src/components/`, `src/__tests__/`)
+
+## Design System Mobile (`mobile/src/`)
+- **Tokens & Contraste (`theme/{tokens,contrast}.ts`):** Fundo Deep Space (`#05070D` → `#0B1120` → `#111827`), orbes neon (`cyan` `#22D3EE`, `purple` `#A855F7`, `mint` `#34D399`), métricas Liquid Glass (`refractionStrength=0.04`, `chromaticSpread=0.006`, raios `26/18/999`) e utilitários WCAG 2.1 (`>= 4.5:1`).
+- **Shader SkSL (`shaders/{liquid_glass.sksl,liquidGlassShader.ts}`):** SDF `sdRoundedRect` + normal segura com guarda de gradiente zero, refração de borda, dispersão cromática RGB e realce especular, compilado com fallback automático para `BlurView`/superfície translúcida em Web/dispositivos sem suporte.
+- **Formatadores (`utils/format.ts`):** BRL tabular com guarda `-0,00`, `shiftYearMonth`, `getCurrentMonthSP` e `formatDayGroupLabel`/`formatTimeSP` em `America/Sao_Paulo`.
+- **Componentes (`src/components/`):** `GlassBackground`, `GlassCard`, `AmountText`, `StatusPill`, `NeonButton`, `GlassTabBar`, `MonthSwitcher`, `TransactionRow`, `DonutChart`, `Skeleton` (`SkeletonBlock`, `SkeletonCard`, `SkeletonRow`).
+- **Rotas base:** `app/_layout.tsx`, `app/(tabs)/_layout.tsx` (barra flutuante `GlassTabBar`) e `app/playground.tsx` (tela DEV interativa dos 10 componentes).
 
 ## Banco de Dados e Edge Functions (schema `finance`)
 - **Tabelas:** `app_settings`, `items`, `accounts`, `categories`, `categorization_rules`, `transactions`, `sync_runs` (todas com RLS ativo sem policies e revogação total para `anon`/`authenticated`, preservando o schema `public` intacto).

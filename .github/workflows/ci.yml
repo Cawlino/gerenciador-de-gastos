@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-and-static:
-    name: T1 Segurança · T2 Estática · T3 Unitário Deno
+    name: T1 Segurança · T2 Estática · T3 Unitário Deno · T7 Frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,13 +23,18 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
 
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      - name: Instalar dependências raiz
-        run: npm ci
+      - name: Instalar dependências raiz e mobile
+        run: |
+          npm ci
+          npm ci --prefix mobile
 
       - name: T1 - Secretlint e check-pii
         run: npm run test:t1:ci
@@ -39,6 +44,9 @@ jobs:
 
       - name: T3 - Testes unitários Edge Functions (Deno)
         run: npm run test:t3
+
+      - name: T7 - Testes frontend mobile (jest-expo)
+        run: npm run test:t7
 
   database-and-integration:
     name: T4 Banco de Dados (pgTAP) · T5 Integração API

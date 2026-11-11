@@ -1,17 +1,14 @@
 import { Tabs } from 'expo-router';
 import { ArrowLeftRight, LayoutDashboard, Link2 } from 'lucide-react-native';
+import { GlassTabBar } from '../../src/components';
 
 export default function TabLayout() {
   return (
     <Tabs
+      tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#22D3EE',
-        tabBarInactiveTintColor: '#8B97AD',
-        tabBarStyle: {
-          backgroundColor: '#0B1120',
-          borderTopColor: 'rgba(255,255,255,0.08)',
-        },
+        sceneStyle: { backgroundColor: '#05070D' },
       }}>
       <Tabs.Screen
         name="index"
