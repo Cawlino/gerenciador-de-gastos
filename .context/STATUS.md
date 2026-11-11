@@ -1,22 +1,22 @@
 # STATUS — GerenciadorDeGastos
 
-**Última Atualização:** 2026-11-11 17:30 (-03:00)
+**Última Atualização:** 2026-11-11 18:08 (-03:00)
 
 ## 📍 Ponto Exato de Parada / Onde Estamos
-**Fase 4 (Backend / Edge Functions) concluída e validada localmente** com bateria cumulativa `T1–T6` **100% verde** (`docs/test-reports/fase-04.md`). Falta apenas a `SUPABASE_DB_PASSWORD` real do projeto remoto `<SUPABASE_PROJECT_REF>` no `.env` para aplicar migrations + deploy das Edge Functions em produção.
+**Fases 3 e 4 concluídas 100% (local e produção remota)** em `<SUPABASE_PROJECT_REF>`: schema `finance` + 130 categorias no banco remoto (schema `public` preservado intacto), secrets configurados e Edge Functions `api` e `pluggy-webhook` publicadas e validadas em produção. Bateria `T1–T6` verde.
 
 ## ✅ Tarefas Concluídas Recentemente
-- Edge Functions em Deno 2 + Hono: `_shared/{schemas,rules,categorize,pluggy,db,sync}.ts`, `api/index.ts`, `pluggy-webhook/index.ts` e `_mock/pluggy-mock.ts`.
-- Correção crítica em `_shared/db.ts` (`sql.json` via `toJsonb`) evitando dupla serialização de colunas JSONB no `postgres.js`.
-- Suítes ativadas: **T3** (`deno test`, 10/10), **T5** (`tests/integration/api.test.ts` + mock + Edge Runtime local, 8/8) e **T6** (`tests/contract/pluggy.contract.test.ts` contra Pluggy v2 real read-only, 4/4).
-- Bateria cumulativa Fase 4 (`npm run test:all -- --phase 4`): **T1, T2, T4 (36/36), T3, T5, T6** aprovadas (`docs/test-reports/fase-04.md`).
-- CI (`.github/workflows/ci.yml`) atualizado para executar T1–T5 automaticamente.
+- `SUPABASE_DB_PASSWORD` real gravada no `.env` local (gitignored, bloqueada pelo `check-pii`).
+- `npx supabase db push --remote --include-seed --yes` aplicado em `<SUPABASE_PROJECT_REF>` (3 migrations no schema `finance` + 130 categorias); `db lint --remote -s finance` 0 erros; schema `public` intacto.
+- Secrets (`APP_KEY`, `WEBHOOK_TOKEN`, `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_ITEM_ID`) e deploy `--no-verify-jwt` das Edge Functions `api` e `pluggy-webhook` concluídos.
+- Smoke checks em produção: `/api/health` (`200`), `/api/dashboard` (`401` sem chave / `200` com chave), `/api/categories` (`200`, `130` itens), `/pluggy-webhook` (`401` sem token), PostgREST `Accept-Profile: finance` bloqueado (`406`).
+- Bateria cumulativa Fase 4 (`T1–T6`) aprovada em `docs/test-reports/fase-04.md`.
 
 ## ⏳ Tarefas em Andamento
-- Deploy remoto da Fase 3/4 aguardando `SUPABASE_DB_PASSWORD` real no `.env` (`db push --include-seed`, `secrets set`, `functions deploy`).
+- Nenhuma pendência aberta das Fases 0–4.
 
 ## 🚧 Pendências / Atenção
-- Atualizar `SUPABASE_DB_PASSWORD` real no `.env` local (projeto `<SUPABASE_PROJECT_REF>`) antes de rodar deploy remoto; **nunca** rodar `db reset --linked` (outras tabelas em `public`).
+- **Nunca** executar `supabase db reset --linked` / `--remote` (outras tabelas no schema `public`).
 
 ## 🎯 Próxima Ação Imediata
-Usuário atualizar `SUPABASE_DB_PASSWORD` real no `.env` seguindo o passo a passo fornecido e autorizar o deploy remoto ou o avanço para a **Fase 5 (Design System Liquid Glass Skia)**.
+Iniciar a **Fase 5 — Design System (Liquid Glass Skia)** (`mobile/src/theme/tokens.ts`, shaders `.sksl`, componentes de vidro e testes **T7** `jest-expo`).
