@@ -12,7 +12,7 @@
     "test:t1:ci": "node scripts/run-t1.mjs --ci",
     "test:t2": "node scripts/run-t2.mjs",
     "test:t3": "echo \"[T3] sera ativada na Fase 4\" && exit 1",
-    "test:t4": "echo \"[T4] sera ativada na Fase 3\" && exit 1",
+    "test:t4": "node scripts/run-t4.mjs",
     "test:t5": "echo \"[T5] sera ativada na Fase 4\" && exit 1",
     "test:t6": "echo \"[T6] sera ativada na Fase 4\" && exit 1",
     "test:t7": "echo \"[T7] sera ativada na Fase 5\" && exit 1",

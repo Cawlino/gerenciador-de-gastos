@@ -28,3 +28,9 @@ Formato: `## ADR-00X: Título` com Status, Contexto, Decisão, Consequências.
 ## ADR-005: Escopo de contas e regras de negócio
 - **Status:** Aceito (2026-11-11)
 - **Decisão:** Conta corrente + cartão de crédito Inter. Pagamento de fatura e transferências entre contas próprias são excluídos de receitas/despesas. Categorias Pluggy traduzidas/agrupadas, com override manual por transação. Painel: saldo da conta corrente; receitas/despesas por mês com navegação; gráfico de rosca por categoria.
+
+## ADR-006: Reaproveitamento de projeto Supabase com schema `finance` isolado
+- **Status:** Aceito (2026-11-11)
+- **Contexto:** Cota gratuita da organização no Supabase já utilizava `2/2` projetos ativos em produção, sendo um deles compartilhado com tabelas existentes no schema `public`.
+- **Decisão:** Isolar todas as tabelas, views e funções do Gerenciador de Gastos no schema dedicado `finance` (com RLS ativo e sem policies), mantendo o schema `public` 100% intacto e nunca usando `db reset --linked`. Edge Functions conectam via `SUPABASE_DB_URL` para não precisar expor `finance` na API PostgREST pública.
+- **Consequências:** Zero impacto no schema `public`. Nota de segurança: `service_role` do projeto continua tendo acesso administrativo a todos os schemas; para isolamento completo no futuro, basta pausar outro projeto e mover para um projeto dedicado.

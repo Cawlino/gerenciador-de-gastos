@@ -36,3 +36,27 @@ jobs:
 
       - name: T2 - Estática (raiz / supabase / mobile)
         run: npm run test:t2
+
+  database-pgtap:
+    name: T4 Banco de Dados (pgTAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Instalar dependências raiz
+        run: npm ci
+
+      - name: Iniciar Supabase local
+        run: npx supabase start
+
+      - name: T4 - Banco de Dados (pgTAP)
+        run: npm run test:t4

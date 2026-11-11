@@ -15,5 +15,9 @@ App Android pessoal para controle de gastos, conectado à conta corrente e cart�
 - `docs/` — `SETUP.md` e `test-reports/`
 - `fixtures/synthetic/` — fixtures sintéticas geradas por `scripts/gen-fixtures.mjs`
 - `scripts/` — `test-all.mjs`, `run-t1.mjs`, `run-t2.mjs`, `check-pii.mjs`, `gen-fixtures.mjs`
-- `supabase/` — config, migrations, seed, tests, functions
+- `supabase/` — config, migrations (`0001_init`, `0002_rules`, `0003_cron`), `seed.sql` (130 categorias Pluggy PT-BR), pgTAP (`tests/`), Edge Functions
 - `mobile/` — app Expo Android
+
+## Banco de Dados (schema `finance`)
+- **Tabelas:** `app_settings`, `items`, `accounts`, `categories`, `categorization_rules`, `transactions`, `sync_runs` (todas com RLS ativo sem policies e revogação total para `anon`/`authenticated`, preservando o schema `public` intacto).
+- **Views / RPCs:** `v_categories_resolved` (CTE recursiva até grupo-pai raiz), `v_transactions_effective`, `apply_rule_to_transactions(uuid)`, `dashboard(p_month)`, `configure_daily_sync_cron(...)`.
