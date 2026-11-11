@@ -1,0 +1,121 @@
+{
+  "results": [
+    {
+      "id": "01000000",
+      "description": "Income",
+      "descriptionTranslated": "Renda"
+    },
+    {
+      "id": "01010000",
+      "description": "Salary",
+      "descriptionTranslated": "Salário",
+      "parentId": "01000000",
+      "parentDescription": "Income"
+    },
+    {
+      "id": "03000000",
+      "description": "Investments",
+      "descriptionTranslated": "Investimentos"
+    },
+    {
+      "id": "04000000",
+      "description": "Same person transfer",
+      "descriptionTranslated": "Transferência mesma titularidade"
+    },
+    {
+      "id": "05000000",
+      "description": "Transfers",
+      "descriptionTranslated": "Transferências"
+    },
+    {
+      "id": "05070000",
+      "description": "Transfer - PIX",
+      "descriptionTranslated": "Transferência - PIX",
+      "parentId": "05000000",
+      "parentDescription": "Transfers"
+    },
+    {
+      "id": "05100000",
+      "description": "Credit card payment",
+      "descriptionTranslated": "Pagamento de cartão de crédito",
+      "parentId": "05000000",
+      "parentDescription": "Transfers"
+    },
+    {
+      "id": "07000000",
+      "description": "Services",
+      "descriptionTranslated": "Serviços"
+    },
+    {
+      "id": "08000000",
+      "description": "Shopping",
+      "descriptionTranslated": "Compras"
+    },
+    {
+      "id": "09000000",
+      "description": "Digital services",
+      "descriptionTranslated": "Serviços digitais"
+    },
+    {
+      "id": "10000000",
+      "description": "Groceries",
+      "descriptionTranslated": "Supermercado"
+    },
+    {
+      "id": "11000000",
+      "description": "Food and drinks",
+      "descriptionTranslated": "Alimentos e bebidas"
+    },
+    {
+      "id": "11010000",
+      "description": "Eating out",
+      "descriptionTranslated": "Restaurantes",
+      "parentId": "11000000",
+      "parentDescription": "Food and drinks"
+    },
+    {
+      "id": "15030000",
+      "description": "Tax on financial operations",
+      "descriptionTranslated": "IOF",
+      "parentId": "15000000",
+      "parentDescription": "Taxes"
+    },
+    {
+      "id": "15000000",
+      "description": "Taxes",
+      "descriptionTranslated": "Impostos"
+    },
+    {
+      "id": "16000000",
+      "description": "Bank fees",
+      "descriptionTranslated": "Taxas bancárias"
+    },
+    {
+      "id": "17000000",
+      "description": "Housing",
+      "descriptionTranslated": "Moradia"
+    },
+    {
+      "id": "18000000",
+      "description": "Healthcare",
+      "descriptionTranslated": "Saúde"
+    },
+    {
+      "id": "19000000",
+      "description": "Transport",
+      "descriptionTranslated": "Transporte"
+    },
+    {
+      "id": "19010000",
+      "description": "Taxi and ride-hailing",
+      "descriptionTranslated": "Táxi e transporte por app",
+      "parentId": "19000000",
+      "parentDescription": "Transport"
+    },
+    {
+      "id": "99999999",
+      "description": "Other",
+      "descriptionTranslated": "Outros"
+    }
+  ]
+}

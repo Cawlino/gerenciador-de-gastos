@@ -1,0 +1,122 @@
+{
+  "results": [
+    {
+      "id": "tx-card-001",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-11T03:00:00.000Z",
+      "description": "IFOOD *RESTAURANTE DEMO",
+      "amount": 48.9,
+      "type": "DEBIT",
+      "operationType": "PAGAMENTO",
+      "status": "POSTED",
+      "categoryId": "11010000",
+      "category": "Eating out",
+      "merchant": {
+        "businessName": "iFood",
+        "cnpj": "14380200000121"
+      },
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    },
+    {
+      "id": "tx-card-002",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-11T03:00:00.000Z",
+      "description": "UBER *VIAGEM DEMO",
+      "amount": 27.4,
+      "type": "DEBIT",
+      "operationType": "PAGAMENTO",
+      "status": "PENDING",
+      "categoryId": "19010000",
+      "category": "Taxi and ride-hailing",
+      "merchant": {
+        "businessName": "Uber",
+        "cnpj": "17895646000187"
+      },
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    },
+    {
+      "id": "tx-card-003",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-10T03:00:00.000Z",
+      "description": "PAGAMENTO ON LINE",
+      "amount": -318.29,
+      "type": "CREDIT",
+      "operationType": "PAGAMENTO",
+      "status": "POSTED",
+      "categoryId": "08000000",
+      "category": "Shopping",
+      "merchant": null,
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    },
+    {
+      "id": "tx-card-004",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-04T03:00:00.000Z",
+      "description": "ESTORNO LOJA DEMO",
+      "amount": -50,
+      "type": "CREDIT",
+      "operationType": "PAGAMENTO",
+      "status": "POSTED",
+      "categoryId": "08000000",
+      "category": "Shopping",
+      "merchant": null,
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    },
+    {
+      "id": "tx-card-005",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-03T03:00:00.000Z",
+      "description": "AMAZON BR DEMO",
+      "amount": 210,
+      "type": "DEBIT",
+      "operationType": "PAGAMENTO",
+      "status": "POSTED",
+      "categoryId": "08000000",
+      "category": "Shopping",
+      "merchant": {
+        "businessName": "Amazon",
+        "cnpj": "15436940000103"
+      },
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    },
+    {
+      "id": "tx-card-006",
+      "accountId": "33333333-3333-4333-8333-333333333333",
+      "date": "2026-11-02T03:00:00.000Z",
+      "description": "COMPRA BARROS EIRELI",
+      "amount": 35,
+      "type": "DEBIT",
+      "operationType": "OUTROS",
+      "status": "POSTED",
+      "categoryId": null,
+      "category": null,
+      "merchant": null,
+      "creditCardMetadata": {
+        "cardNumber": "0000",
+        "paymentType": "SINGLE",
+        "billForecastDate": "2026-11"
+      }
+    }
+  ],
+  "next": null
+}

@@ -1,0 +1,163 @@
+{
+  "results": [
+    {
+      "id": "tx-bank-001",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-05T12:00:00.000Z",
+      "description": "PIX RECEBIDO EMPRESA DEMO LTDA",
+      "amount": 6120,
+      "type": "CREDIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "01010000",
+      "category": "Salary",
+      "paymentData": {
+        "payer": {
+          "name": "Empresa Demo Ltda",
+          "documentNumber": {
+            "value": "12345678000199"
+          }
+        }
+      },
+      "merchant": null
+    },
+    {
+      "id": "tx-bank-002",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-06T14:20:00.000Z",
+      "description": "PIX ENVIADO IMOBILIARIA CENTRAL",
+      "amount": -1800,
+      "type": "DEBIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "17000000",
+      "category": "Housing",
+      "paymentData": {
+        "receiver": {
+          "name": "Imobiliária Central",
+          "documentNumber": {
+            "value": "98765432000110"
+          }
+        }
+      },
+      "merchant": null
+    },
+    {
+      "id": "tx-bank-003",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-10T15:35:28.000Z",
+      "description": "PAGAMENTO BOLETO BANCO INTER",
+      "amount": -318.29,
+      "type": "DEBIT",
+      "operationType": "BOLETO",
+      "status": "POSTED",
+      "categoryId": "05000000",
+      "category": "Transfers",
+      "paymentData": {
+        "paymentMethod": "BOLETO"
+      },
+      "merchant": null
+    },
+    {
+      "id": "tx-bank-004",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-08T10:15:00.000Z",
+      "description": "PIX MESMA TITULARIDADE",
+      "amount": -500,
+      "type": "DEBIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "04000000",
+      "category": "Same person transfer",
+      "paymentData": {
+        "receiver": {
+          "name": "Usuário Demo",
+          "documentNumber": {
+            "value": "00000000000"
+          }
+        }
+      },
+      "merchant": null
+    },
+    {
+      "id": "tx-bank-005",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-09T11:00:00.000Z",
+      "description": "APLICACAO CDB INTER",
+      "amount": -400,
+      "type": "DEBIT",
+      "operationType": "OUTROS",
+      "status": "POSTED",
+      "categoryId": "03000000",
+      "category": "Investments",
+      "paymentData": null,
+      "merchant": null
+    },
+    {
+      "id": "tx-bank-006",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-11T13:10:00.000Z",
+      "description": "PIX ENVIADO MERCADINHO DO BAIRRO",
+      "amount": -84.5,
+      "type": "DEBIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "05070000",
+      "category": "Transfer - PIX",
+      "paymentData": {
+        "receiver": {
+          "name": "Mercadinho do Bairro",
+          "documentNumber": {
+            "value": "55444333000122"
+          }
+        }
+      },
+      "merchant": {
+        "businessName": "Mercadinho do Bairro",
+        "cnpj": "55444333000122"
+      }
+    },
+    {
+      "id": "tx-bank-007",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-10-25T16:00:00.000Z",
+      "description": "PIX ENVIADO MERCADINHO DO BAIRRO",
+      "amount": -62,
+      "type": "DEBIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "05070000",
+      "category": "Transfer - PIX",
+      "paymentData": {
+        "receiver": {
+          "name": "Mercadinho do Bairro",
+          "documentNumber": {
+            "value": "55444333000122"
+          }
+        }
+      },
+      "merchant": {
+        "businessName": "Mercadinho do Bairro",
+        "cnpj": "55444333000122"
+      }
+    },
+    {
+      "id": "tx-bank-008",
+      "accountId": "22222222-2222-4222-8222-222222222222",
+      "date": "2026-11-01T01:30:00.000Z",
+      "description": "IFOOD *LANCHONETE NOTURNA",
+      "amount": -55,
+      "type": "DEBIT",
+      "operationType": "PIX",
+      "status": "POSTED",
+      "categoryId": "11010000",
+      "category": "Eating out",
+      "paymentData": null,
+      "merchant": {
+        "businessName": "iFood",
+        "cnpj": "14380200000121"
+      }
+    }
+  ],
+  "next": null
+}

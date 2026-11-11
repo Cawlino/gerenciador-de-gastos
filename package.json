@@ -1,0 +1,30 @@
+{
+  "name": "gerenciador-de-gastos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "App pessoal de controle de gastos integrado ao Banco Inter via Pluggy (Meu Pluggy) e Supabase",
+  "license": "MIT",
+  "scripts": {
+    "prepare": "husky",
+    "gen:fixtures": "node scripts/gen-fixtures.mjs",
+    "test:all": "node scripts/test-all.mjs",
+    "test:t1": "node scripts/run-t1.mjs",
+    "test:t1:ci": "node scripts/run-t1.mjs --ci",
+    "test:t2": "node scripts/run-t2.mjs",
+    "test:t3": "echo \"[T3] sera ativada na Fase 4\" && exit 1",
+    "test:t4": "echo \"[T4] sera ativada na Fase 3\" && exit 1",
+    "test:t5": "echo \"[T5] sera ativada na Fase 4\" && exit 1",
+    "test:t6": "echo \"[T6] sera ativada na Fase 4\" && exit 1",
+    "test:t7": "echo \"[T7] sera ativada na Fase 5\" && exit 1",
+    "test:t8": "echo \"[T8] sera ativada na Fase 6\" && exit 1",
+    "test:t9": "echo \"[T9] sera ativada na Fase 9\" && exit 1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^9.3.1",
+    "husky": "^9.1.7",
+    "secretlint": "^9.3.1",
+    "vitest": "^3.1.2",
+    "zod": "^3.24.2"
+  }
+}

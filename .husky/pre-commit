@@ -1,0 +1,2 @@
+npm run test:t1:ci
+node scripts/check-pii.mjs --staged
