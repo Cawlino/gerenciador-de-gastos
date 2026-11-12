@@ -2,8 +2,10 @@ import React, { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -30,9 +32,13 @@ export function GlassBackground({
   const cyanDrift = useSharedValue(0);
   const purpleDrift = useSharedValue(0);
   const mintDrift = useSharedValue(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (!animated) {
+    if (!animated || reducedMotion) {
+      cancelAnimation(cyanDrift);
+      cancelAnimation(purpleDrift);
+      cancelAnimation(mintDrift);
       cyanDrift.value = 0;
       purpleDrift.value = 0;
       mintDrift.value = 0;
@@ -63,7 +69,7 @@ export function GlassBackground({
       -1,
       false,
     );
-  }, [animated, cyanDrift, mintDrift, purpleDrift]);
+  }, [animated, cyanDrift, mintDrift, purpleDrift, reducedMotion]);
 
   const cyanStyle = useAnimatedStyle(() => ({
     transform: [
@@ -99,7 +105,11 @@ export function GlassBackground({
         pointerEvents="none"
       />
 
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <View
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+        importantForAccessibility="no-hide-descendants"
+      >
         <Animated.View style={[styles.orbContainer, styles.orbCyanPos, cyanStyle]}>
           <View style={[styles.orbOuter, { backgroundColor: 'rgba(34, 211, 238, 0.07)' }]} />
           <View style={[styles.orbInner, { backgroundColor: COLORS.orb.cyan }]} />

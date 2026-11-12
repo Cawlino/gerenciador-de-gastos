@@ -4,19 +4,28 @@ App Android pessoal para controle de gastos conectado automaticamente à conta c
 
 ## Arquitetura
 
-- **Mobile (`mobile/`)**: Expo + Expo Router (TypeScript) + New Architecture + `@shopify/react-native-skia` (shader SkSL de refração SDF e dispersão cromática) + TanStack Query.
-- **Backend (`supabase/`)**: Postgres com RLS + Edge Functions (Deno + Hono) para sincronização com a API `/v2/transactions` da Pluggy, pareamento automático de pagamento de fatura, regras de categorização e webhook em tempo real.
-- **Testes (`scripts/test-all.mjs`)**: Bateria cumulativa com verificações de segurança (`secretlint`, `gitleaks`, `check-pii`), análise estática, pgTAP, Deno unit tests, testes de integração com mock da Pluggy, teste de contrato read-only, Jest/Testing Library e E2E com Maestro.
+- **Mobile (`mobile/`)**: Expo + Expo Router (TypeScript) + New Architecture + `@shopify/react-native-skia` (shader SkSL de refração SDF e dispersão cromática) + TanStack Query + `react-native-pluggy-connect`.
+- **Backend (`supabase/`)**: Postgres (schema isolado `finance` com RLS sem policies) + Edge Functions (Deno + Hono) para sincronização com `GET /v2/transactions` (cursor `next`), pareamento de pagamento de fatura, regras R1–R10, webhook (`pluggy-webhook`) e agendamento diário (`pg_cron` + `pg_net`).
+- **Automação (`scripts/`)**: Setup idempotente de webhook + `pg_cron` (`setup-automation.mjs`), build standalone Android local (`android-local.mjs`) e bateria de testes cumulativa **T1–T9**.
 
-## Como configurar
-
-Veja o guia completo em [docs/SETUP.md](docs/SETUP.md).
-
-## Como testar
+## Principais comandos
 
 ```bash
-npm run test:all -- --phase 2
+# Configura webhook Pluggy + cron diário em produção
+npm run automation:setup
+
+# Gera APK release standalone (Windows ASCII mirror + ABI arm64/x86_64)
+npm run android:local -- --arch arm64-v8a,x86_64 --no-install
+
+# Executa bateria completa (T1–T9) e gera docs/test-reports/fase-10.md
+npm run test:all -- --phase 10 --with-emulator --cold
 ```
+
+## Documentação
+
+- [docs/SETUP.md](docs/SETUP.md) — configuração de Pluggy, Supabase, `.env`, EAS/build local e ADB Wi-Fi
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — checklist manual no celular com app do Banco Inter e revisão pré-publicação GitHub
+- [docs/test-reports/](docs/test-reports/) — relatórios das baterias por fase (`fase-02.md` .. `fase-10.md`)
 
 ## Segurança
 

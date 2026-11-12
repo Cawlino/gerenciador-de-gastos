@@ -13,8 +13,20 @@ import { resolve } from "node:path";
 
 const ROOT = process.cwd();
 const MOCK_PORT = 4010;
-const API_BASE = "http://127.0.0.1:54321/functions/v1";
+const DEFAULT_API_BASE = "http://127.0.0.1:54321/functions/v1";
 const MOCK_URL = `http://127.0.0.1:${MOCK_PORT}`;
+
+function resolveLocalApiBase(statusStdout) {
+  try {
+    const parsed = JSON.parse(statusStdout);
+    if (typeof parsed?.API_URL === "string" && parsed.API_URL.trim()) {
+      return `${parsed.API_URL.trim().replace(/\/+$/, "")}/functions/v1`;
+    }
+  } catch {
+    // Fallback para porta padrao
+  }
+  return DEFAULT_API_BASE;
+}
 const APP_KEY = "t5-local-integration-app-key";
 const WEBHOOK_TOKEN = "t5-local-integration-webhook-token";
 const TEMP_ENV_PATH = resolve(ROOT, "supabase", ".temp", "t5.env");
@@ -140,11 +152,12 @@ function createLogCollector(child, prefix) {
 
 async function main() {
   console.log("[T5] Verificando Supabase local (Docker)...");
-  const statusCheck = spawnSync("npx supabase status", { shell: true, stdio: "pipe", encoding: "utf8" });
+  const statusCheck = spawnSync("npx supabase status -o json", { shell: true, stdio: "pipe", encoding: "utf8" });
   if (statusCheck.status !== 0) {
     console.error("[T5] ERRO: Supabase local nao esta ativo. Execute `npx supabase start`.");
     process.exit(1);
   }
+  const apiBase = resolveLocalApiBase(statusCheck.stdout);
 
   const dbContainer = findDbContainer();
   if (!dbContainer) {
@@ -209,7 +222,7 @@ async function main() {
       60_000,
       getServeLogs,
     );
-    await waitForHttp(`${API_BASE}/api/health`, "supabase functions serve", 60_000, getServeLogs);
+    await waitForHttp(`${apiBase}/api/health`, "supabase functions serve", 60_000, getServeLogs);
 
     console.log("[T5] Executando Vitest em tests/integration/api.test.ts...");
     const testRun = spawnSync("npx vitest run tests/integration/api.test.ts", {
@@ -218,7 +231,7 @@ async function main() {
       stdio: "inherit",
       env: {
         ...process.env,
-        T5_API_BASE: API_BASE,
+        T5_API_BASE: apiBase,
         T5_MOCK_URL: MOCK_URL,
         T5_APP_KEY: APP_KEY,
         T5_WEBHOOK_TOKEN: WEBHOOK_TOKEN,

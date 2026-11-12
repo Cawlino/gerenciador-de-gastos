@@ -95,3 +95,41 @@ Deno.test("PluggyClient: reautentica automaticamente quando recebe 401 e propaga
 
   await assertRejects(() => client.getItem("11111111-1111-4111-8111-111111111111"), PluggyApiError);
 });
+
+Deno.test("PluggyClient.refreshItem dispara PATCH /items/:id e valida resposta", async () => {
+  const seenMethods: string[] = [];
+  const fetchMock: typeof fetch = (input, init) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    seenMethods.push(`${method} ${url}`);
+
+    if (url.endsWith("/auth")) {
+      return Promise.resolve(Response.json({ apiKey: "api-key-0000000000" }));
+    }
+    if (url.endsWith("/items/11111111-1111-4111-8111-111111111111") && method === "PATCH") {
+      return Promise.resolve(
+        Response.json({
+          id: "11111111-1111-4111-8111-111111111111",
+          status: "UPDATING",
+          executionStatus: "IN_PROGRESS",
+          lastUpdatedAt: "2026-11-12T12:00:00.000Z",
+        }),
+      );
+    }
+    return Promise.resolve(new Response("not found", { status: 404 }));
+  };
+
+  const client = new PluggyClient({
+    clientId: "cid-1",
+    clientSecret: "csecret-demo",
+    baseUrl: "http://pluggy.test",
+    fetchFn: fetchMock,
+  });
+
+  const refreshed = await client.refreshItem("11111111-1111-4111-8111-111111111111");
+  assertEquals(refreshed.status, "UPDATING");
+  assertEquals(seenMethods, [
+    "POST http://pluggy.test/auth",
+    "PATCH http://pluggy.test/items/11111111-1111-4111-8111-111111111111",
+  ]);
+});

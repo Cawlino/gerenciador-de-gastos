@@ -1,0 +1,41 @@
+appId: com.cawlino.gerenciadorgastos
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 45000
+- assertVisible: "Painel"
+- assertVisible:
+    id: "dashboard-checking-balance"
+- tapOn:
+    text: "Conexão"
+    retryTapIfNoChange: false
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible:
+      id: "connection-screen"
+    timeout: 10000
+- assertVisible:
+    id: "connection-status-card"
+- assertVisible: "Contas vinculadas"
+- tapOn:
+    id: "sync-now-button"
+    retryTapIfNoChange: false
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible:
+      id: "sync-feedback-banner"
+    timeout: 90000
+- scrollUntilVisible:
+    element:
+      id: "toggle-own-transfers"
+    direction: DOWN
+    speed: 55
+    visibilityPercentage: 80
+    timeout: 30000
+    waitToSettleTimeoutMs: 500
+- assertVisible: "Regras de exclusão.*"
+- assertVisible:
+    id: "toggle-own-transfers"

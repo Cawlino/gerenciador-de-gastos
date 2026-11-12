@@ -1,0 +1,104 @@
+-- 0007_cron_runtime_ns.sql — Carrega nomes de schema `cron`/`net` via `pg_namespace` em runtime
+-- Garante que `plpgsql_check` (`supabase db lint`) nao tente resolver `cron.job` em bancos locais sem pg_cron,
+-- usando os schemas reais `cron` e `net` quando presentes em producao.
+
+CREATE OR REPLACE FUNCTION finance.configure_daily_sync_cron(
+  p_api_url  text,
+  p_app_key  text,
+  p_schedule text DEFAULT '0 9 * * *'
+)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_cron_schema text;
+  v_net_schema  text;
+  v_job_id      bigint;
+  v_cmd         text;
+BEGIN
+  IF NULLIF(trim(p_api_url), '') IS NULL OR NULLIF(trim(p_app_key), '') IS NULL THEN
+    RAISE EXCEPTION 'invalid_cron_config: api_url e app_key sao obrigatorios';
+  END IF;
+
+  IF to_regclass('cron.job') IS NOT NULL THEN
+    SELECT n.nspname INTO v_cron_schema
+    FROM pg_namespace n
+    WHERE n.nspname = 'cron'
+      AND EXISTS (
+        SELECT 1 FROM pg_proc p WHERE p.pronamespace = n.oid AND p.proname = 'schedule'
+      )
+    LIMIT 1;
+  END IF;
+
+  SELECT n.nspname INTO v_net_schema
+  FROM pg_namespace n
+  WHERE n.nspname = 'net'
+    AND EXISTS (
+      SELECT 1 FROM pg_proc p WHERE p.pronamespace = n.oid AND p.proname = 'http_post'
+    )
+  LIMIT 1;
+
+  IF v_cron_schema IS NULL OR v_net_schema IS NULL THEN
+    RETURN 'extensions_not_enabled';
+  END IF;
+
+  EXECUTE format('SELECT jobid FROM %I.job WHERE jobname = $1 LIMIT 1', v_cron_schema)
+    INTO v_job_id
+    USING 'finance-daily-sync';
+
+  IF v_job_id IS NOT NULL THEN
+    EXECUTE format('SELECT %I.unschedule($1)', v_cron_schema) USING v_job_id;
+  END IF;
+
+  v_cmd := format(
+    'SELECT %I.http_post(url := %L, headers := jsonb_build_object(''Content-Type'', ''application/json'', ''x-app-key'', %L), body := ''{"trigger":"cron"}''::jsonb, timeout_milliseconds := 20000);',
+    v_net_schema,
+    rtrim(p_api_url, '/') || '/sync',
+    p_app_key
+  );
+
+  EXECUTE format('SELECT %I.schedule($1, $2, $3)', v_cron_schema)
+    USING 'finance-daily-sync', p_schedule, v_cmd;
+
+  RETURN 'scheduled';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION finance.unschedule_daily_sync_cron()
+RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_cron_schema text;
+  v_job_id      bigint;
+BEGIN
+  IF to_regclass('cron.job') IS NULL THEN
+    RETURN false;
+  END IF;
+
+  SELECT n.nspname INTO v_cron_schema
+  FROM pg_namespace n
+  WHERE n.nspname = 'cron'
+  LIMIT 1;
+
+  IF v_cron_schema IS NULL THEN
+    RETURN false;
+  END IF;
+
+  EXECUTE format('SELECT jobid FROM %I.job WHERE jobname = $1 LIMIT 1', v_cron_schema)
+    INTO v_job_id
+    USING 'finance-daily-sync';
+
+  IF v_job_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  EXECUTE format('SELECT %I.unschedule($1)', v_cron_schema) USING v_job_id;
+  RETURN true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION finance.configure_daily_sync_cron(text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION finance.unschedule_daily_sync_cron() FROM PUBLIC, anon, authenticated;
+GRANT ALL ON FUNCTION finance.configure_daily_sync_cron(text, text, text) TO postgres, service_role;
+GRANT ALL ON FUNCTION finance.unschedule_daily_sync_cron() TO postgres, service_role;

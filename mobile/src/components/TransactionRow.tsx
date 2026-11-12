@@ -30,6 +30,7 @@ export interface TransactionRowItem {
   description: string;
   categoryName?: string | null;
   categoryColor?: string | null;
+  accountLabel?: string | null;
   amountNorm: number;
   date: string;
   status?: 'POSTED' | 'PENDING';
@@ -91,6 +92,12 @@ export function TransactionRow({
   const isPending = item.status === 'PENDING';
   const categoryLabel = item.categoryName?.trim() || 'Sem categoria';
   const timeLabel = formatTimeSP(item.date);
+  const subtitleParts = [categoryLabel];
+  if (item.accountLabel?.trim()) {
+    subtitleParts.push(item.accountLabel.trim());
+  }
+  subtitleParts.push(timeLabel);
+  const subtitleText = subtitleParts.join(' · ');
 
   const rowContent = (
     <GlassCard
@@ -117,7 +124,7 @@ export function TransactionRow({
         </Text>
         <View style={styles.metaRow}>
           <Text style={styles.subtitle} numberOfLines={1}>
-            {`${categoryLabel} · ${timeLabel}`}
+            {subtitleText}
           </Text>
           {isPending ? (
             <StatusPill label="pendente" variant="warning" showDot={false} />

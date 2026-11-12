@@ -7,6 +7,8 @@
   "scripts": {
     "prepare": "husky",
     "gen:fixtures": "node scripts/gen-fixtures.mjs",
+    "emulator:up": "node scripts/emulator-up.mjs",
+    "android:local": "node scripts/android-local.mjs",
     "test:all": "node scripts/test-all.mjs",
     "test:t1": "node scripts/run-t1.mjs",
     "test:t1:ci": "node scripts/run-t1.mjs --ci",
@@ -16,8 +18,9 @@
     "test:t5": "node scripts/run-t5.mjs",
     "test:t6": "node scripts/run-t6.mjs",
     "test:t7": "node scripts/run-t7.mjs",
-    "test:t8": "echo \"[T8] sera ativada na Fase 6\" && exit 1",
-    "test:t9": "echo \"[T9] sera ativada na Fase 9\" && exit 1"
+    "test:t8": "node scripts/run-t8.mjs",
+    "test:t9": "node scripts/run-t9.mjs",
+    "automation:setup": "node scripts/setup-automation.mjs"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.6.0",

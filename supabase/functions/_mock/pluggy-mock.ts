@@ -24,10 +24,12 @@ function loadFixture<T>(name: string): T {
 
 interface MockState {
   promotePendingCardTx: boolean;
+  itemStatus: string | null;
 }
 
 const state: MockState = {
   promotePendingCardTx: false,
+  itemStatus: null,
 };
 
 const server = Deno.serve({ port: PORT, hostname: HOST }, async (req: Request): Promise<Response> => {
@@ -42,6 +44,9 @@ const server = Deno.serve({ port: PORT, hostname: HOST }, async (req: Request): 
     const body = await req.json().catch(() => ({}));
     if (typeof body.promotePendingCardTx === "boolean") {
       state.promotePendingCardTx = body.promotePendingCardTx;
+    }
+    if (typeof body.itemStatus === "string" || body.itemStatus === null) {
+      state.itemStatus = body.itemStatus;
     }
     return Response.json({ ok: true, state });
   }
@@ -60,6 +65,9 @@ const server = Deno.serve({ port: PORT, hostname: HOST }, async (req: Request): 
     const requestedId = path.slice("/items/".length);
     if (requestedId !== item.id) {
       return Response.json({ code: 404, message: "item not found" }, { status: 404 });
+    }
+    if (state.itemStatus) {
+      return Response.json({ ...item, status: state.itemStatus });
     }
     return Response.json(item);
   }

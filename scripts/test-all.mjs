@@ -14,6 +14,8 @@ const args = process.argv.slice(2);
 const phaseIdx = args.indexOf("--phase");
 const phase = phaseIdx !== -1 ? Number(args[phaseIdx + 1]) : 2;
 const writeReport = !args.includes("--no-report");
+const withEmulator = args.includes("--with-emulator");
+const coldEmulator = args.includes("--cold");
 
 if (!Number.isInteger(phase) || phase < 2 || phase > 10) {
   console.error("Uso: node scripts/test-all.mjs --phase <2..10>");
@@ -44,11 +46,30 @@ console.log(`========================================\n`);
 for (const suite of activeSuites) {
   const start = Date.now();
   console.log(`>>> [${suite.id}] ${suite.name}`);
-  const res = spawnSync(`npm run ${suite.script}`, {
-    stdio: "inherit",
-    shell: true,
-    cwd: process.cwd(),
-  });
+  let res;
+  if (suite.id === "T8" && withEmulator) {
+    const upArgs = coldEmulator ? ["scripts/emulator-up.mjs", "--cold"] : ["scripts/emulator-up.mjs"];
+    const upRes = spawnSync("node", upArgs, { stdio: "inherit", cwd: process.cwd() });
+    try {
+      res =
+        upRes.status === 0
+          ? spawnSync(`npm run ${suite.script}`, {
+              stdio: "inherit",
+              shell: true,
+              cwd: process.cwd(),
+              env: { ...process.env, T8_INSTALL_APK: "1" },
+            })
+          : upRes;
+    } finally {
+      spawnSync("node", ["scripts/emulator-up.mjs", "--stop"], { stdio: "inherit", cwd: process.cwd() });
+    }
+  } else {
+    res = spawnSync(`npm run ${suite.script}`, {
+      stdio: "inherit",
+      shell: true,
+      cwd: process.cwd(),
+    });
+  }
   const ms = Date.now() - start;
   const passed = res.status === 0;
   if (!passed) allPassed = false;

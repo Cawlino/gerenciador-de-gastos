@@ -1,5 +1,9 @@
 export { AmountText, type AmountTextProps, type AmountTone } from './AmountText';
 export {
+  CategoryPickerModal,
+  type CategoryPickerModalProps,
+} from './CategoryPickerModal';
+export {
   DonutChart,
   type DonutCategorySlice,
   type DonutChartProps,

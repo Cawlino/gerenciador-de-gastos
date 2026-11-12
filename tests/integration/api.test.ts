@@ -278,4 +278,68 @@ describe("T5 — Edge Functions Integration (Mock Pluggy v2 + Postgres local)", 
     const checkRestored = await apiFetch("/transactions/tx-card-006");
     expect(checkRestored.status).toBe(200);
   });
+
+  it("registra pull_to_refresh (PATCH /items) e reflete item/waiting_user_input -> item/updated via webhook", async () => {
+    const pullRes = await apiFetch("/sync", {
+      method: "POST",
+      body: JSON.stringify({ refresh: true, fullSync: false, trigger: "pull_to_refresh" }),
+    });
+    expect(pullRes.status).toBe(200);
+    const pullBody = await pullRes.json();
+    expect(pullBody.ok).toBe(true);
+    expect(pullBody.sync.itemId).toBe(SYNTHETIC_ITEM_ID);
+
+    const itemsAfterPull = await (await apiFetch("/items")).json();
+    expect(itemsAfterPull.syncRuns[0].trigger).toBe("pull_to_refresh");
+    expect(itemsAfterPull.syncRuns[0].status).toBe("success");
+
+    const setWaitingRes = await fetch(`${MOCK_URL}/__admin/state`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ itemStatus: "WAITING_USER_INPUT" }),
+    });
+    expect(setWaitingRes.status).toBe(200);
+
+    const waitingEvent = await fetch(`${API_BASE}/pluggy-webhook?sync=1`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-webhook-token": WEBHOOK_TOKEN,
+      },
+      body: JSON.stringify({
+        event: "item/waiting_user_input",
+        eventId: "evt-wait-1",
+        itemId: SYNTHETIC_ITEM_ID,
+      }),
+    });
+    expect(waitingEvent.status).toBe(200);
+
+    const itemsWaiting = await (await apiFetch("/items")).json();
+    expect(itemsWaiting.items[0].status).toBe("WAITING_USER_INPUT");
+
+    const clearWaitingRes = await fetch(`${MOCK_URL}/__admin/state`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ itemStatus: null }),
+    });
+    expect(clearWaitingRes.status).toBe(200);
+
+    const recoveredEvent = await fetch(`${API_BASE}/pluggy-webhook?sync=1`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-webhook-token": WEBHOOK_TOKEN,
+      },
+      body: JSON.stringify({
+        event: "item/updated",
+        eventId: "evt-updated-1",
+        itemId: SYNTHETIC_ITEM_ID,
+      }),
+    });
+    expect(recoveredEvent.status).toBe(200);
+
+    const itemsRecovered = await (await apiFetch("/items")).json();
+    expect(itemsRecovered.items[0].status).toBe("UPDATED");
+    expect(itemsRecovered.syncRuns[0].trigger).toBe("webhook");
+  });
 });

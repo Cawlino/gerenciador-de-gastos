@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(17);
+SELECT plan(18);
 
 -- Fixture sintetica (100% alinhada com fixtures/synthetic/*.json e regras R1..R10)
 INSERT INTO finance.items (id, connector_id, connector_name, status, execution_status, last_synced_at, consent_expires_at)
@@ -206,6 +206,12 @@ SELECT is(
   (SELECT effective_category_id FROM finance.v_transactions_effective WHERE id = 'tx-bank-007'),
   '18000000',
   'R9: Regra por CNPJ preserva override manual existente'
+);
+
+-- 15. Cron helper: aceita ambiente local sem pg_cron ou agenda em ambiente com extensoes
+SELECT ok(
+  finance.configure_daily_sync_cron('https://example.supabase.co/functions/v1/api', 'demo-key', '0 9 * * *') IN ('extensions_not_enabled', 'scheduled'),
+  'configure_daily_sync_cron retorna status esperado conforme extensoes ativas'
 );
 
 SELECT * FROM finish();

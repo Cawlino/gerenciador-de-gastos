@@ -58,24 +58,50 @@ function sortCategoriesParentsFirst(cats: PluggyCategory[]): PluggyCategory[] {
 }
 
 async function upsertCategories(sql: SqlClient, cats: PluggyCategory[]): Promise<Set<string>> {
-  const sorted = sortCategoriesParentsFirst(cats);
-  for (const c of sorted) {
+  if (cats.length > 0) {
+    const sorted = sortCategoriesParentsFirst(cats);
+    const payload = sorted.map((c) => ({
+      id: c.id,
+      description: c.description,
+      description_pt: c.descriptionTranslated ?? c.description,
+      parent_id: c.parentId ?? null,
+      parent_description: c.parentDescription ?? null,
+    }));
+
+    // Passo 1 em lote: garante todos os IDs antes de vincular parent_id
     await sql`
       INSERT INTO finance.categories (id, description, description_pt, parent_id, parent_description)
-      VALUES (
-        ${c.id},
-        ${c.description},
-        ${c.descriptionTranslated ?? c.description},
-        ${c.parentId ?? null},
-        ${c.parentDescription ?? null}
+      SELECT r.id, r.description, r.description_pt, NULL, r.parent_description
+      FROM jsonb_to_recordset(${toJsonb(sql, payload)}::jsonb) AS r(
+        id text,
+        description text,
+        description_pt text,
+        parent_id text,
+        parent_description text
       )
       ON CONFLICT (id) DO UPDATE SET
         description = EXCLUDED.description,
         description_pt = EXCLUDED.description_pt,
-        parent_id = EXCLUDED.parent_id,
         parent_description = EXCLUDED.parent_description
     `;
+
+    // Passo 2 em lote: atualiza hierarquia parent_id sem round-trips por linha
+    await sql`
+      UPDATE finance.categories AS c
+      SET parent_id = CASE
+        WHEN r.parent_id IS NOT NULL
+          AND EXISTS (SELECT 1 FROM finance.categories p WHERE p.id = r.parent_id)
+        THEN r.parent_id
+        ELSE NULL
+      END
+      FROM jsonb_to_recordset(${toJsonb(sql, payload)}::jsonb) AS r(
+        id text,
+        parent_id text
+      )
+      WHERE c.id = r.id
+    `;
   }
+
   const rows = await sql<{ id: string }[]>`SELECT id FROM finance.categories`;
   return new Set(rows.map((r) => r.id));
 }
@@ -307,14 +333,54 @@ export async function syncItem(
     const mergedForPairing = [...incoming, ...existingStubs];
     const { pairedCount } = applyBillPairingAndRefunds(mergedForPairing, { windowDays, tolerance });
 
-    await sql.begin(async (txSql) => {
-      // Passo 1: Upsert de todas as transacoes recebidas com paired_tx_id = NULL inicialmente
-      // (evita erro de FK autorreferenciada caso o par seja inserido depois).
-      // CRITICO (R9): NUNCA sobrescreve `manual_category_id` nem `manual_excluded`.
-      for (const n of incoming) {
-        const matchedRule = matchCategorizationRule(n, rules);
-        const ruleCategoryId = matchedRule ? matchedRule.categoryId : null;
+    const preparedIncoming = incoming.map((n) => {
+      const matchedRule = matchCategorizationRule(n, rules);
+      return {
+        id: n.id,
+        account_id: n.accountId,
+        occurred_at: n.occurredAt,
+        occurred_date_sp: n.occurredDateSp,
+        month_sp: n.monthSp,
+        description: n.description,
+        description_raw: n.descriptionRaw ?? null,
+        description_norm: n.descriptionNorm,
+        amount_raw: n.amountRaw,
+        amount_norm: n.amountNorm,
+        pluggy_type: n.pluggyType,
+        operation_type: n.operationType ?? null,
+        status: n.status,
+        kind: n.kind,
+        excluded: n.excluded,
+        pluggy_category_id: n.pluggyCategoryId ?? null,
+        rule_category_id: matchedRule ? matchedRule.categoryId : null,
+        counterparty_name: n.counterpartyName ?? null,
+        counterparty_doc: n.counterpartyDoc ?? null,
+        merchant_name: n.merchantName ?? null,
+        merchant_cnpj: n.merchantCnpj ?? null,
+        provider_id: n.providerId ?? null,
+        currency_code: n.currencyCode,
+        payment_data: n.paymentData ?? null,
+        merchant_data: n.merchantData ?? null,
+        credit_card_metadata: n.creditCardMetadata ?? null,
+        raw: n.raw ?? {},
+      };
+    });
 
+    const pairedRows = mergedForPairing
+      .filter((n) => Boolean(n.pairedTxId))
+      .map((n) => ({
+        id: n.id,
+        kind: n.kind,
+        excluded: n.excluded,
+        paired_tx_id: n.pairedTxId,
+      }));
+
+    await sql.begin(async (txSql) => {
+      // Passo 1 em lotes: evita centenas de round-trips individuais no pooler em syncs de 12 meses.
+      // CRITICO (R9): NUNCA sobrescreve `manual_category_id` nem `manual_excluded`.
+      const BATCH_SIZE = 80;
+      for (let i = 0; i < preparedIncoming.length; i += BATCH_SIZE) {
+        const batch = preparedIncoming.slice(i, i + BATCH_SIZE);
         await txSql`
           INSERT INTO finance.transactions (
             id, account_id, occurred_at, occurred_date_sp, month_sp,
@@ -325,18 +391,42 @@ export async function syncItem(
             counterparty_name, counterparty_doc, merchant_name, merchant_cnpj,
             provider_id, currency_code, payment_data, merchant_data, credit_card_metadata, raw
           )
-          VALUES (
-            ${n.id}, ${n.accountId}, ${n.occurredAt}, ${n.occurredDateSp}::date, ${n.monthSp},
-            ${n.description}, ${n.descriptionRaw}, ${n.descriptionNorm},
-            ${n.amountRaw}, ${n.amountNorm}, ${n.pluggyType}, ${n.operationType}, ${n.status},
-            ${n.kind}, ${n.excluded}, ${null},
-            ${n.pluggyCategoryId}, ${ruleCategoryId},
-            ${n.counterpartyName}, ${n.counterpartyDoc}, ${n.merchantName}, ${n.merchantCnpj},
-            ${n.providerId}, ${n.currencyCode},
-            ${toJsonb(txSql, n.paymentData)}::jsonb,
-            ${toJsonb(txSql, n.merchantData)}::jsonb,
-            ${toJsonb(txSql, n.creditCardMetadata)}::jsonb,
-            ${toJsonb(txSql, n.raw)}::jsonb
+          SELECT
+            r.id, r.account_id, r.occurred_at, r.occurred_date_sp, r.month_sp,
+            r.description, r.description_raw, r.description_norm,
+            r.amount_raw, r.amount_norm, r.pluggy_type, r.operation_type, r.status,
+            r.kind, r.excluded, NULL,
+            r.pluggy_category_id, r.rule_category_id,
+            r.counterparty_name, r.counterparty_doc, r.merchant_name, r.merchant_cnpj,
+            r.provider_id, r.currency_code, r.payment_data, r.merchant_data, r.credit_card_metadata, r.raw
+          FROM jsonb_to_recordset(${toJsonb(txSql, batch)}::jsonb) AS r(
+            id text,
+            account_id uuid,
+            occurred_at timestamptz,
+            occurred_date_sp date,
+            month_sp text,
+            description text,
+            description_raw text,
+            description_norm text,
+            amount_raw numeric(14,2),
+            amount_norm numeric(14,2),
+            pluggy_type text,
+            operation_type text,
+            status text,
+            kind text,
+            excluded boolean,
+            pluggy_category_id text,
+            rule_category_id text,
+            counterparty_name text,
+            counterparty_doc text,
+            merchant_name text,
+            merchant_cnpj text,
+            provider_id text,
+            currency_code text,
+            payment_data jsonb,
+            merchant_data jsonb,
+            credit_card_metadata jsonb,
+            raw jsonb
           )
           ON CONFLICT (id) DO UPDATE SET
             account_id = EXCLUDED.account_id,
@@ -365,15 +455,20 @@ export async function syncItem(
         `;
       }
 
-      // Passo 2: Atualiza pareamentos R2 agora que ambos os registros existem na tabela
-      for (const n of mergedForPairing) {
-        if (n.pairedTxId) {
-          await txSql`
-            UPDATE finance.transactions
-            SET kind = ${n.kind}, excluded = ${n.excluded}, paired_tx_id = ${n.pairedTxId}
-            WHERE id = ${n.id}
-          `;
-        }
+      // Passo 2 em lote: atualiza pareamentos R2/R3 agora que todas as transacoes existem
+      for (let i = 0; i < pairedRows.length; i += BATCH_SIZE) {
+        const pairBatch = pairedRows.slice(i, i + BATCH_SIZE);
+        await txSql`
+          UPDATE finance.transactions AS t
+          SET kind = u.kind, excluded = u.excluded, paired_tx_id = u.paired_tx_id
+          FROM jsonb_to_recordset(${toJsonb(txSql, pairBatch)}::jsonb) AS u(
+            id text,
+            kind text,
+            excluded boolean,
+            paired_tx_id text
+          )
+          WHERE t.id = u.id
+        `;
       }
     });
 

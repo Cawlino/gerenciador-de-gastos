@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -30,8 +32,14 @@ export function SkeletonBlock({
   testID,
 }: SkeletonBlockProps) {
   const opacity = useSharedValue(0.32);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      cancelAnimation(opacity);
+      opacity.value = 0.48;
+      return;
+    }
     opacity.value = withRepeat(
       withSequence(
         withTiming(0.68, { duration: 850, easing: Easing.inOut(Easing.ease) }),
@@ -40,7 +48,7 @@ export function SkeletonBlock({
       -1,
       false,
     );
-  }, [opacity]);
+  }, [opacity, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

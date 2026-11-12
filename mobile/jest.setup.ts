@@ -39,6 +39,7 @@ jest.mock('react-native-reanimated', () => {
     createAnimatedComponent,
     useSharedValue,
     useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
+    useReducedMotion: jest.fn(() => false),
     cancelAnimation: jest.fn(),
     Easing: {
       inOut: jest.fn(() => jest.fn()),
@@ -111,6 +112,12 @@ jest.mock('expo-router', () => ({
     replace: jest.fn(),
     canGoBack: jest.fn(() => true),
   })),
+  useLocalSearchParams: jest.fn(() => ({})),
+}));
+
+jest.mock('react-native-pluggy-connect', () => ({
+  PluggyConnect: (props: Record<string, unknown>) =>
+    mockReact.createElement(MockView, { testID: 'pluggy-connect-mock', ...props }),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
