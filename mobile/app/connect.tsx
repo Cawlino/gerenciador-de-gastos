@@ -73,6 +73,7 @@ export default function ConnectScreen() {
             onPress={handleClose}
             accessibilityRole="button"
             accessibilityLabel="Fechar widget"
+            hitSlop={6}
             style={styles.backBtn}
             testID="connect-back-btn"
           >
@@ -98,7 +99,13 @@ export default function ConnectScreen() {
               </Text>
             </View>
           ) : widgetError ? (
-            <GlassCard variant="card" contentStyle={styles.stack} testID="connect-error">
+            <GlassCard
+              variant="card"
+              tone="neutral"
+              tintColor={COLORS.accent.expenseTint}
+              contentStyle={styles.stack}
+              testID="connect-error"
+            >
               <Text style={styles.errorTitle}>Falha no widget Pluggy</Text>
               <Text style={styles.subtitle}>{widgetError}</Text>
               <NeonButton
@@ -152,12 +159,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: COLORS.glass.hairline,
+    backgroundColor: COLORS.glass.fill,
     alignItems: 'center',
     justifyContent: 'center',
   },

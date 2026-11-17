@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Sparkles, Trash2 } from 'lucide-react-native';
@@ -34,13 +35,29 @@ export default function RulesScreen() {
     }
   };
 
-  const handleDeleteRule = (id: string) => {
+  const performDeleteRule = (id: string) => {
     setErrorMessage(null);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     deleteRuleMutation.mutate(id, {
       onError: (err) => {
         setErrorMessage(getApiErrorMessage(err));
       },
     });
+  };
+
+  const handleDeleteRule = (id: string, label: string) => {
+    Alert.alert(
+      'Remover regra automática?',
+      `A regra "${label}" deixará de ser aplicada em sincronizações futuras.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => performDeleteRule(id),
+        },
+      ],
+    );
   };
 
   return (
@@ -51,6 +68,7 @@ export default function RulesScreen() {
             onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Voltar"
+            hitSlop={6}
             testID="rules-back-btn"
             style={styles.backBtn}
           >
@@ -60,10 +78,10 @@ export default function RulesScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          <GlassCard variant="card" tone="purple" contentStyle={styles.introCard}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <GlassCard variant="card" tone="neutral" contentStyle={styles.introCard}>
             <View style={styles.introTitleRow}>
-              <Sparkles size={16} color={COLORS.neon.purple} />
+              <Sparkles size={16} color={COLORS.accent.ice} />
               <Text style={styles.introTitle}>Aplicar a semelhantes (R9)</Text>
             </View>
             <Text style={styles.introBody}>
@@ -73,7 +91,11 @@ export default function RulesScreen() {
           </GlassCard>
 
           {errorMessage ? (
-            <GlassCard tone="purple" testID="rules-error-banner">
+            <GlassCard
+              tone="neutral"
+              tintColor={COLORS.accent.expenseTint}
+              testID="rules-error-banner"
+            >
               <Text style={styles.errorText}>{errorMessage}</Text>
             </GlassCard>
           ) : null}
@@ -84,7 +106,11 @@ export default function RulesScreen() {
               <SkeletonRow />
             </View>
           ) : rulesQuery.isError ? (
-            <GlassCard tone="purple" contentStyle={styles.emptyCard}>
+            <GlassCard
+              tone="neutral"
+              tintColor={COLORS.accent.expenseTint}
+              contentStyle={styles.emptyCard}
+            >
               <Text style={styles.emptyTitle}>Erro ao carregar regras</Text>
               <Text style={styles.emptyBody}>{getApiErrorMessage(rulesQuery.error)}</Text>
               <NeonButton
@@ -131,10 +157,11 @@ export default function RulesScreen() {
                   </View>
 
                   <Pressable
-                    onPress={() => handleDeleteRule(rule.id)}
+                    onPress={() => handleDeleteRule(rule.id, rule.label || rule.match_value)}
                     disabled={deleteRuleMutation.isPending}
                     accessibilityRole="button"
                     accessibilityLabel={`Remover regra ${rule.label || rule.match_value}`}
+                    hitSlop={6}
                     testID={`delete-rule-${rule.id}`}
                     style={({ pressed }) => [styles.deleteBtn, pressed ? styles.pressed : null]}
                   >
@@ -163,14 +190,14 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.glass.fill,
     borderWidth: 1,
-    borderColor: COLORS.glass.strokeStart,
+    borderColor: COLORS.glass.hairline,
   },
   headerTitle: {
     color: COLORS.text.primary,
@@ -178,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.size.section,
   },
   headerSpacer: {
-    width: 38,
+    width: 42,
   },
   content: {
     paddingHorizontal: SPACING.lg,
@@ -238,14 +265,14 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.size.micro,
   },
   deleteBtn: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     borderRadius: GLASS_METRICS.radius.row - 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(251, 113, 133, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(251, 113, 133, 0.35)',
+    borderColor: COLORS.accent.expenseBorder,
   },
   pressed: {
     opacity: 0.75,

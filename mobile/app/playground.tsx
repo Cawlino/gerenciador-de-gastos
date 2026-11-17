@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, RefreshCw, Sparkles } from 'lucide-react-native';
+import { getGlassCapabilities, isLiquidGlassSupported } from 'react-native-liquid-glassmorphism';
 import {
   AmountText,
   DonutChart,
@@ -79,13 +80,15 @@ export default function PlaygroundScreen() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [lastTappedRow, setLastTappedRow] = useState<string | null>(null);
+  const capabilities = getGlassCapabilities();
+  const nativeGlassReady = isLiquidGlassSupported();
 
   const totalExpense = SAMPLE_SLICES.reduce((acc, s) => acc + s.amount, 0);
 
   return (
     <GlassBackground testID="playground-screen">
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
             <Pressable
               onPress={() => {
@@ -93,16 +96,19 @@ export default function PlaygroundScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel="Voltar"
+              hitSlop={6}
               style={styles.backBtn}
             >
               <ChevronLeft size={20} color={COLORS.text.primary} />
             </Pressable>
             <View style={styles.headerText}>
               <Text style={styles.title}>Playground Liquid Glass</Text>
-              <Text style={styles.subtitle}>Tokens, Shader SkSL e 10 componentes</Text>
+              <Text style={styles.subtitle}>
+                {`AGSL ${nativeGlassReady ? 'Ativo' : 'Fallback'} · tier ${capabilities.tier} (SDK ${capabilities.osVersion})`}
+              </Text>
             </View>
             <StatusPill
-              label={forceFallback ? 'Fallback Blur' : 'Shader SkSL'}
+              label={forceFallback ? 'Fallback Leve' : 'AGSL Nativo'}
               variant={forceFallback ? 'warning' : 'success'}
             />
           </View>
@@ -115,7 +121,8 @@ export default function PlaygroundScreen() {
 
           <GlassCard
             variant="elevated"
-            tone="cyan"
+            tone="neutral"
+            interactive
             forceFallback={forceFallback}
             refraction={refraction}
             testID="playground-hero-card"
@@ -143,16 +150,16 @@ export default function PlaygroundScreen() {
 
           <View style={styles.controlsRow}>
             <NeonButton
-              label={forceFallback ? 'Ativar Shader SkSL' : 'Testar Modo Fallback'}
+              label={forceFallback ? 'Ativar AGSL Nativo' : 'Testar Modo Fallback'}
               tone="cyan"
-              icon={<Sparkles size={16} color={COLORS.neon.cyan} />}
+              icon={<Sparkles size={16} color={COLORS.accent.ice} />}
               onPress={() => setForceFallback((prev) => !prev)}
               style={styles.flexBtn}
               testID="toggle-fallback-btn"
             />
             <NeonButton
               label={`Refração ${refraction === 0.04 ? 'Alta' : 'Padrão'}`}
-              tone="purple"
+              tone="neutral"
               onPress={() => setRefraction((prev) => (prev === 0.04 ? 0.08 : 0.04))}
               style={styles.flexBtn}
               testID="toggle-refraction-btn"
@@ -183,7 +190,7 @@ export default function PlaygroundScreen() {
               <NeonButton
                 label="Sincronizar Agora"
                 tone="mint"
-                icon={<RefreshCw size={16} color={COLORS.neon.mint} />}
+                icon={<RefreshCw size={16} color={COLORS.semantic.income} />}
                 onPress={() => setLastTappedRow('Sincronização acionada')}
               />
               <NeonButton
@@ -237,12 +244,12 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: COLORS.glass.hairline,
+    backgroundColor: COLORS.glass.fill,
     alignItems: 'center',
     justifyContent: 'center',
   },

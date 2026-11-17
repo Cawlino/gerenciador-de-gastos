@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import * as ExpoRouter from 'expo-router';
 import { apiClient } from '../api/client';
 import type { DashboardResponse } from '../api/types';
+import { PrivacyDemoProvider } from '../context/PrivacyDemoContext';
 import { formatMonthLabel, getCurrentMonthSP, shiftYearMonth } from '../utils/format';
 import DashboardScreen from '../../app/(tabs)/index';
 
@@ -252,9 +253,9 @@ describe('DashboardScreen (Fase 8 — Painel completo)', () => {
     await fireEvent.press(screen.getByTestId('dashboard-reconnect-action'));
     expect(pushMock).toHaveBeenCalledWith('/(tabs)/settings');
 
-    const scrollView = screen.getByTestId('dashboard-scroll');
+    const pullRefresh = screen.getByTestId('dashboard-pull-refresh');
     await act(async () => {
-      scrollView.props.refreshControl.props.onRefresh();
+      fireEvent(pullRefresh, 'accessibilityAction', { nativeEvent: { actionName: 'activate' } });
     });
 
     await waitFor(() => {
@@ -264,6 +265,84 @@ describe('DashboardScreen (Fase 8 — Painel completo)', () => {
         trigger: 'pull_to_refresh',
       });
       expect(screen.getByTestId('dashboard-sync-notice')).toBeTruthy();
+    });
+  });
+
+  it('alterna Olho de privacidade, Modo Demo 12M e abre a tela /analytics pelo botão abaixo do Donut', async () => {
+    const pushMock = mockRouterPush();
+    jest.spyOn(apiClient, 'getDashboard').mockResolvedValue(makeDashboardPayload());
+
+    await render(
+      wrap(
+        <PrivacyDemoProvider>
+          <DashboardScreen />
+        </PrivacyDemoProvider>,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-checking-balance')).toBeTruthy();
+    });
+
+    // Padrão: ambos desativados -> dados reais visíveis
+    expect(screen.getByTestId('dashboard-checking-balance').props.children).toBe('R$ 3.450,25');
+    expect(screen.getByTestId('dashboard-card-invoice').props.children).toBe('R$ 412,30');
+
+    // Ativa Olho de Privacidade -> mascara todos os valores monetários
+    await fireEvent.press(screen.getByTestId('dashboard-privacy-toggle-btn'));
+    expect(screen.getByTestId('dashboard-checking-balance').props.children).toBe('R$ ••••');
+    expect(screen.getByTestId('dashboard-income-total').props.children).toBe('+ R$ ••••');
+    expect(screen.getByTestId('dashboard-expense-total').props.children).toBe('- R$ ••••');
+    expect(screen.getByTestId('dashboard-card-invoice').props.children).toBe('R$ ••••');
+    expect(screen.getByTestId('dashboard-card-available-limit').props.children).toBe('R$ ••••');
+
+    // Desativa Olho -> valores reais retornam imediatamente
+    await fireEvent.press(screen.getByTestId('dashboard-privacy-toggle-btn'));
+    expect(screen.getByTestId('dashboard-checking-balance').props.children).toBe('R$ 3.450,25');
+
+    // Ativa Modo Demo 12M -> troca para dados fictícios de 12 meses e badge Demo 12M
+    await fireEvent.press(screen.getByTestId('dashboard-demo-toggle-btn'));
+    await waitFor(() => {
+      expect(screen.getByText('Demo 12M')).toBeTruthy();
+      expect(screen.getByTestId('dashboard-checking-balance').props.children).not.toBe('R$ 3.450,25');
+    });
+
+    // Desativa Modo Demo 12M -> restaura dados reais
+    await fireEvent.press(screen.getByTestId('dashboard-demo-toggle-btn'));
+    await waitFor(() => {
+      expect(screen.getByText('Online')).toBeTruthy();
+      expect(screen.getByTestId('dashboard-checking-balance').props.children).toBe('R$ 3.450,25');
+    });
+
+    // Botão abaixo do gráfico de pizza abre /analytics?month=...
+    await fireEvent.press(screen.getByTestId('dashboard-open-analytics-btn'));
+    expect(pushMock).toHaveBeenCalledWith(
+      `/analytics?month=${encodeURIComponent(CURRENT_MONTH)}`,
+    );
+  });
+
+  it('permite entrar no Modo Demo 12M direto do fallback quando não há backend configurado', async () => {
+    mockRouterPush();
+    jest
+      .spyOn(apiClient, 'getDashboard')
+      .mockRejectedValue(new Error('EXPO_PUBLIC_API_URL não configurada.'));
+
+    await render(
+      wrap(
+        <PrivacyDemoProvider>
+          <DashboardScreen />
+        </PrivacyDemoProvider>,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-fallback-demo-button')).toBeTruthy();
+    });
+
+    await fireEvent.press(screen.getByTestId('dashboard-fallback-demo-button'));
+    await waitFor(() => {
+      expect(screen.getByText('Demo 12M')).toBeTruthy();
+      expect(screen.getByTestId('dashboard-checking-balance')).toBeTruthy();
     });
   });
 });

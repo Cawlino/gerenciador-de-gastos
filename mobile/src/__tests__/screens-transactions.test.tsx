@@ -1,8 +1,9 @@
 /// <reference types="jest" />
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as ExpoRouter from 'expo-router';
 import { apiClient } from '../api/client';
 import type {
@@ -333,6 +334,12 @@ describe('Telas da Fase 7 (Transações, Detalhe/R9 e Regras)', () => {
     await render(wrap(<TransactionsScreen />));
 
     await waitFor(() => {
+      expect(screen.getByTestId('tx-search-toggle-btn')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('tx-search-input')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('tx-search-toggle-btn'));
+    await waitFor(() => {
       expect(screen.getByTestId('tx-search-input')).toBeTruthy();
     });
 
@@ -470,6 +477,7 @@ describe('Telas da Fase 7 (Transações, Detalhe/R9 e Regras)', () => {
     const deleteSpy = jest
       .spyOn(apiClient, 'deleteRule')
       .mockResolvedValue({ deleted: true, id: 'rule-1' });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
 
     await render(wrap(<RulesScreen />));
 
@@ -478,6 +486,16 @@ describe('Telas da Fase 7 (Transações, Detalhe/R9 e Regras)', () => {
     });
 
     await fireEvent.press(screen.getByTestId('delete-rule-rule-1'));
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    const buttons = alertSpy.mock.calls[0]?.[2];
+    const destructive = Array.isArray(buttons)
+      ? buttons.find((btn) => btn.style === 'destructive')
+      : undefined;
+    await act(async () => {
+      destructive?.onPress?.();
+    });
+    alertSpy.mockRestore();
+
     await waitFor(() => {
       expect(deleteSpy).toHaveBeenCalledWith('rule-1');
     });

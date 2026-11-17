@@ -1,4 +1,5 @@
 export { appQueryClient, createAppQueryClient } from './queryClient';
+export { useAnalyticsData } from './useAnalyticsData';
 export {
   financeKeys,
   useCategories,

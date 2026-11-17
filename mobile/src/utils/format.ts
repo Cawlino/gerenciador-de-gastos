@@ -84,6 +84,47 @@ export function formatSignedBRL(value: number): string {
 }
 
 /**
+ * Formata um valor mascarado para o modo de privacidade (Olho ativado).
+ */
+export function formatMaskedBRL(
+  value: number,
+  options?: { signed?: boolean; hideSymbol?: boolean },
+): string {
+  const safe = sanitizeMoney(value);
+  const prefix = options?.hideSymbol ? '' : 'R$ ';
+  if (options?.signed) {
+    if (safe > 0) return `+ ${prefix}••••`;
+    if (safe < 0) return `- ${prefix}••••`;
+  } else if (safe < 0) {
+    return `-${prefix}••••`;
+  }
+  return `${prefix}••••`;
+}
+
+/**
+ * Formata valor monetário respeitando a flag de privacidade (`hidden`).
+ */
+export function formatPrivacyBRL(
+  value: number,
+  hidden: boolean,
+  options?: { absolute?: boolean; hideSymbol?: boolean; signed?: boolean },
+): string {
+  if (hidden) {
+    return formatMaskedBRL(options?.absolute ? Math.abs(value) : value, {
+      signed: options?.signed,
+      hideSymbol: options?.hideSymbol,
+    });
+  }
+  if (options?.signed) {
+    return formatSignedBRL(value);
+  }
+  return formatBRL(value, {
+    absolute: options?.absolute,
+    hideSymbol: options?.hideSymbol,
+  });
+}
+
+/**
  * Formata porcentagem em padrão brasileiro (ex.: 35,6%).
  */
 export function formatPercent(value: number, decimals = 1): string {
@@ -120,6 +161,16 @@ export function shiftYearMonth(monthKey: string, deltaMonths: number): string {
   return `${String(nextYear).padStart(4, '0')}-${String(nextMonth + 1).padStart(2, '0')}`;
 }
 
+const spPartsFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: SAO_PAULO_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 /**
  * Extrai componentes de calendário no fuso America/Sao_Paulo.
  */
@@ -132,26 +183,37 @@ export function getDatePartsSP(date: Date): {
   weekdayIndex: number;
   dateKey: string;
 } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: SAO_PAULO_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
+  const parts = spPartsFormatter.formatToParts(date);
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  let hour = 0;
+  let minute = 0;
+  let yearStr = '0000';
+  let monthStr = '00';
+  let dayStr = '00';
 
-  const byType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-  const year = Number(byType.year);
-  const month = Number(byType.month);
-  const day = Number(byType.day);
-  const hour = Number(byType.hour);
-  const minute = Number(byType.minute);
-  const weekdayIndex = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).getUTCDay();
-  const dateKey = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(
-    day,
-  ).padStart(2, '0')}`;
+  for (let i = 0; i < parts.length; i += 1) {
+    const p = parts[i];
+    if (p.type === 'year') {
+      yearStr = p.value;
+      year = Number(p.value);
+    } else if (p.type === 'month') {
+      monthStr = p.value;
+      month = Number(p.value);
+    } else if (p.type === 'day') {
+      dayStr = p.value;
+      day = Number(p.value);
+    } else if (p.type === 'hour') {
+      hour = Number(p.value);
+    } else if (p.type === 'minute') {
+      minute = Number(p.value);
+    }
+  }
+
+  const daysSinceEpoch = Math.floor(Date.UTC(year, month - 1, day) / 86400000);
+  const weekdayIndex = ((daysSinceEpoch + 4) % 7 + 7) % 7;
+  const dateKey = `${yearStr}-${monthStr}-${dayStr}`;
 
   return { year, month, day, hour, minute, weekdayIndex, dateKey };
 }

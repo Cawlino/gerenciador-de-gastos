@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CheckCircle2,
   CreditCard,
+  FlaskConical,
   History,
   Landmark,
   Link2,
@@ -25,6 +26,8 @@ import {
   AmountText,
   GlassBackground,
   GlassCard,
+  LiquidPullRefresh,
+  LiquidPullScrollView,
   NeonButton,
   SkeletonCard,
   SkeletonRow,
@@ -37,6 +40,7 @@ import {
   useSyncMutation,
   useUpdateSettingsMutation,
 } from '../../src/hooks';
+import { usePrivacyDemo } from '../../src/context/PrivacyDemoContext';
 import { COLORS, GLASS_METRICS, SPACING, TAB_BAR_CLEARANCE, TYPOGRAPHY } from '../../src/theme/tokens';
 import {
   isValidUuid,
@@ -45,7 +49,7 @@ import {
   mapTriggerLabel,
   maskItemId,
 } from '../../src/utils/connectionHelpers';
-import { formatDayGroupLabel, formatSyncRelative, formatTimeSP } from '../../src/utils/format';
+import { formatDayGroupLabel, formatPrivacyBRL, formatSyncRelative, formatTimeSP } from '../../src/utils/format';
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
@@ -63,6 +67,7 @@ function readCreditNumber(account: AccountDto, key: string): number | null {
  */
 export default function SettingsScreen() {
   const router = useRouter();
+  const { isPrivacyHidden, isDemoMode, setDemoMode } = usePrivacyDemo();
   const itemsQuery = useItems();
   const settingsQuery = useSettings();
   const syncMutation = useSyncMutation();
@@ -72,6 +77,8 @@ export default function SettingsScreen() {
   const [itemIdInput, setItemIdInput] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [lastSyncBanner, setLastSyncBanner] = useState<SyncResultDto | null>(null);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+  const localScrollY = useSharedValue(0);
 
   const primaryItem: PluggyItemDto | undefined = itemsQuery.data?.items[0];
   const accounts: AccountDto[] = itemsQuery.data?.accounts ?? [];
@@ -83,37 +90,39 @@ export default function SettingsScreen() {
   const isBusy = syncMutation.isPending || registerMutation.isPending;
   const statusInfo = mapItemStatus(primaryItem?.status, primaryItem?.execution_status);
 
-  const handleManualSync = (
-    fullSync: boolean,
-    trigger: 'manual' | 'pull_to_refresh' = 'manual',
-  ) => {
-    setFormError(null);
-    syncMutation.mutate(
-      {
-        itemId: primaryItem?.id,
-        refresh: !fullSync,
-        fullSync,
-        trigger,
-      },
-      {
-        onSuccess: (res) => {
-          setLastSyncBanner(res.sync);
+  const handleManualSync = useCallback(
+    (fullSync: boolean, trigger: 'manual' | 'pull_to_refresh' = 'manual') => {
+      setFormError(null);
+      syncMutation.mutate(
+        {
+          itemId: primaryItem?.id,
+          refresh: !fullSync,
+          fullSync,
+          trigger,
         },
-        onError: (err) => {
-          setFormError(getErrorMessage(err));
+        {
+          onSuccess: (res) => {
+            setLastSyncBanner(res.sync);
+          },
+          onError: (err) => {
+            setFormError(getErrorMessage(err));
+          },
         },
-      },
-    );
-  };
+      );
+    },
+    [primaryItem?.id, syncMutation],
+  );
 
-  const handlePullToRefresh = () => {
+  const handlePullToRefresh = useCallback(() => {
     if (primaryItem) {
       handleManualSync(false, 'pull_to_refresh');
     } else {
-      void itemsQuery.refetch();
-      void settingsQuery.refetch();
+      setManualRefreshing(true);
+      void Promise.all([itemsQuery.refetch(), settingsQuery.refetch()]).finally(() => {
+        setManualRefreshing(false);
+      });
     }
-  };
+  }, [handleManualSync, itemsQuery, primaryItem, settingsQuery]);
 
   const handleRegisterItem = () => {
     const trimmed = itemIdInput.trim();
@@ -147,16 +156,19 @@ export default function SettingsScreen() {
   return (
     <GlassBackground testID="connection-screen">
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          refreshControl={
-            <RefreshControl
-              refreshing={itemsQuery.isRefetching || syncMutation.isPending}
-              onRefresh={handlePullToRefresh}
-              tintColor={COLORS.neon.cyan}
-            />
-          }
+        <LiquidPullRefresh
+          refreshing={manualRefreshing || syncMutation.isPending}
+          onRefresh={handlePullToRefresh}
+          scrollYSV={localScrollY}
+          testID="settings-pull-refresh"
         >
+          {(pullBind) => (
+            <LiquidPullScrollView
+              pullBind={pullBind}
+              contentContainerStyle={styles.content}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.kicker}>Open Finance</Text>
@@ -178,7 +190,11 @@ export default function SettingsScreen() {
           ) : null}
 
           {itemsQuery.isError ? (
-            <GlassCard tone="neutral" style={styles.errorBorder} testID="connection-error-card">
+            <GlassCard
+              tone="neutral"
+              tintColor={COLORS.accent.expenseTint}
+              testID="connection-error-card"
+            >
               <Text style={styles.errorTitle}>Não foi possível carregar a conexão</Text>
               <Text style={styles.errorBody}>{getErrorMessage(itemsQuery.error)}</Text>
               <NeonButton
@@ -188,15 +204,25 @@ export default function SettingsScreen() {
                 style={styles.retryBtn}
                 testID="connection-retry-button"
               />
+              {!isDemoMode ? (
+                <NeonButton
+                  label="Explorar em Modo Demo (12 meses)"
+                  tone="purple"
+                  icon={<FlaskConical size={16} color={COLORS.orb.purpleSolid} />}
+                  onPress={() => setDemoMode(true)}
+                  style={styles.retryBtn}
+                  testID="connection-fallback-demo-button"
+                />
+              ) : null}
             </GlassCard>
           ) : null}
 
           {!itemsQuery.isLoading && !itemsQuery.isError ? (
             <>
-              <GlassCard variant="elevated" tone="cyan" testID="connection-status-card">
+              <GlassCard variant="elevated" tone="neutral" testID="connection-status-card">
                 <View style={styles.itemHeader}>
                   <View style={styles.iconCircle}>
-                    <Landmark size={20} color={COLORS.neon.cyan} />
+                    <Landmark size={20} color={COLORS.accent.ice} />
                   </View>
                   <View style={styles.flex1}>
                     <Text style={styles.cardTitle}>
@@ -212,7 +238,7 @@ export default function SettingsScreen() {
 
                 {primaryItem?.consent_expires_at ? (
                   <View style={styles.metaStrip}>
-                    <ShieldCheck size={14} color={COLORS.neon.mint} />
+                    <ShieldCheck size={14} color={COLORS.semantic.income} />
                     <Text style={styles.metaText}>
                       Consentimento válido até {formatDayGroupLabel(primaryItem.consent_expires_at)}
                     </Text>
@@ -230,14 +256,14 @@ export default function SettingsScreen() {
                     fullWidth
                     loading={syncMutation.isPending}
                     disabled={!primaryItem || isBusy}
-                    icon={<RefreshCw size={16} color={COLORS.neon.cyan} />}
+                    icon={<RefreshCw size={16} color={COLORS.accent.ice} />}
                     onPress={() => handleManualSync(false)}
                     testID="sync-now-button"
                   />
                   <View style={styles.twoColRow}>
                     <NeonButton
                       label="Sync 12 meses"
-                      tone="mint"
+                      tone="neutral"
                       loading={syncMutation.isPending}
                       disabled={!primaryItem || isBusy}
                       onPress={() => handleManualSync(true)}
@@ -246,8 +272,8 @@ export default function SettingsScreen() {
                     />
                     <NeonButton
                       label={primaryItem ? 'Reconectar' : 'Conectar Widget'}
-                      tone="purple"
-                      icon={<Link2 size={16} color={COLORS.neon.purple} />}
+                      tone="neutral"
+                      icon={<Link2 size={16} color={COLORS.accent.ice} />}
                       onPress={handleOpenReconnect}
                       style={styles.flex1}
                       testID="reconnect-button"
@@ -257,9 +283,14 @@ export default function SettingsScreen() {
               </GlassCard>
 
               {lastSyncBanner ? (
-                <GlassCard variant="row" tone="mint" testID="sync-feedback-banner">
+                <GlassCard
+                  variant="row"
+                  tone="neutral"
+                  tintColor={COLORS.accent.incomeTint}
+                  testID="sync-feedback-banner"
+                >
                   <View style={styles.bannerRow}>
-                    <CheckCircle2 size={18} color={COLORS.neon.mint} />
+                    <CheckCircle2 size={18} color={COLORS.semantic.income} />
                     <Text style={styles.bannerText}>
                       {`Sync concluído: ${lastSyncBanner.fetchedCount} lidas · ${lastSyncBanner.upsertedCount} salvas · ${lastSyncBanner.pairedCount} pareadas`}
                     </Text>
@@ -268,7 +299,11 @@ export default function SettingsScreen() {
               ) : null}
 
               {formError ? (
-                <GlassCard variant="row" style={styles.errorBorder} testID="connection-form-error">
+                <GlassCard
+                  variant="row"
+                  tintColor={COLORS.accent.expenseTint}
+                  testID="connection-form-error"
+                >
                   <Text style={styles.inlineWarn}>{formError}</Text>
                 </GlassCard>
               ) : null}
@@ -284,13 +319,13 @@ export default function SettingsScreen() {
                     const isCredit = acc.type === 'CREDIT';
                     const availableLimit = isCredit ? readCreditNumber(acc, 'availableCreditLimit') : null;
                     return (
-                      <GlassCard key={acc.id} variant="row" padding={SPACING.md}>
+                      <GlassCard key={acc.id} variant="row" surface="lightweight" padding={SPACING.md}>
                         <View style={styles.accountRow}>
                           <View style={styles.accountIcon}>
                             {isCredit ? (
-                              <CreditCard size={18} color={COLORS.neon.purple} />
+                              <CreditCard size={18} color={COLORS.accent.ice} />
                             ) : (
-                              <Landmark size={18} color={COLORS.neon.cyan} />
+                              <Landmark size={18} color={COLORS.accent.ice} />
                             )}
                           </View>
                           <View style={styles.flex1}>
@@ -300,7 +335,7 @@ export default function SettingsScreen() {
                             <Text style={styles.cardSubtitle}>
                               {isCredit
                                 ? availableLimit !== null
-                                  ? `Cartão ${acc.number_masked ?? ''} · Disp. R$ ${availableLimit.toFixed(2).replace('.', ',')}`
+                                  ? `Cartão ${acc.number_masked ?? ''} · Disp. ${formatPrivacyBRL(availableLimit, isPrivacyHidden)}`
                                   : `Cartão ${acc.number_masked ?? 'GOLD'}`
                                 : `Conta Corrente ${acc.number_masked ?? ''}`}
                             </Text>
@@ -356,11 +391,12 @@ export default function SettingsScreen() {
                   <Switch
                     value={excludeOwnTransfers}
                     disabled={updateSettingsMutation.isPending}
-                    onValueChange={(val) =>
-                      updateSettingsMutation.mutate({ exclude_own_transfers: val })
-                    }
-                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(34,211,238,0.45)' }}
-                    thumbColor={excludeOwnTransfers ? COLORS.neon.cyan : COLORS.text.secondary}
+                    onValueChange={(val) => {
+                      void Haptics.selectionAsync().catch(() => undefined);
+                      updateSettingsMutation.mutate({ exclude_own_transfers: val });
+                    }}
+                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(56,189,248,0.45)' }}
+                    thumbColor={excludeOwnTransfers ? COLORS.accent.ice : '#CBD5E1'}
                     testID="toggle-own-transfers"
                   />
                 </View>
@@ -377,11 +413,12 @@ export default function SettingsScreen() {
                   <Switch
                     value={excludeInvestments}
                     disabled={updateSettingsMutation.isPending}
-                    onValueChange={(val) =>
-                      updateSettingsMutation.mutate({ exclude_investments: val })
-                    }
-                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(52,211,153,0.45)' }}
-                    thumbColor={excludeInvestments ? COLORS.neon.mint : COLORS.text.secondary}
+                    onValueChange={(val) => {
+                      void Haptics.selectionAsync().catch(() => undefined);
+                      updateSettingsMutation.mutate({ exclude_investments: val });
+                    }}
+                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(56,189,248,0.45)' }}
+                    thumbColor={excludeInvestments ? COLORS.accent.ice : '#CBD5E1'}
                     testID="toggle-investments"
                   />
                 </View>
@@ -389,7 +426,7 @@ export default function SettingsScreen() {
 
               <GlassCard variant="card" contentStyle={styles.stack}>
                 <View style={styles.historyHeader}>
-                  <History size={18} color={COLORS.neon.cyan} />
+                  <History size={18} color={COLORS.accent.ice} />
                   <Text style={styles.sectionTitle}>Execuções recentes</Text>
                 </View>
                 {syncRuns.length === 0 ? (
@@ -398,7 +435,7 @@ export default function SettingsScreen() {
                   syncRuns.slice(0, 5).map((run) => {
                     const pill = mapSyncRunStatus(run.status);
                     return (
-                      <GlassCard key={run.id} variant="row" padding={SPACING.md}>
+                      <GlassCard key={run.id} variant="row" surface="lightweight" padding={SPACING.md}>
                         <View style={styles.runRow}>
                           <View style={styles.flex1}>
                             <Text style={styles.accountName}>
@@ -419,7 +456,9 @@ export default function SettingsScreen() {
               </GlassCard>
             </>
           ) : null}
-        </ScrollView>
+            </LiquidPullScrollView>
+          )}
+        </LiquidPullRefresh>
       </SafeAreaView>
     </GlassBackground>
   );
@@ -454,8 +493,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLORS.text.primary,
-    fontFamily: TYPOGRAPHY.family.bold,
-    fontSize: TYPOGRAPHY.size.title,
+    fontFamily: TYPOGRAPHY.family.display,
+    fontSize: 24,
+    letterSpacing: -0.5,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -466,9 +506,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: GLASS_METRICS.radius.row,
-    backgroundColor: 'rgba(34, 211, 238, 0.14)',
+    backgroundColor: COLORS.accent.iceTint,
     borderWidth: 1,
-    borderColor: 'rgba(34, 211, 238, 0.35)',
+    borderColor: COLORS.accent.iceBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -563,10 +603,11 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.size.body,
   },
   input: {
+    minHeight: 48,
     borderRadius: GLASS_METRICS.radius.row,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.16)',
-    backgroundColor: 'rgba(5, 7, 13, 0.65)',
+    borderColor: COLORS.glass.hairline,
+    backgroundColor: 'rgba(5, 11, 24, 0.55)',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     color: COLORS.text.primary,

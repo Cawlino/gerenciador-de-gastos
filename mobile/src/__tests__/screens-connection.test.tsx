@@ -294,7 +294,7 @@ describe('Telas conectadas (Conexão, Painel e Pluggy Connect)', () => {
     });
 
     expect(screen.getByTestId('dashboard-checking-balance').props.children).toBe('R$ 3.450,25');
-    await fireEvent.press(screen.getByText('Gerenciar Conexão & Sync'));
+    await fireEvent.press(screen.getByTestId('dashboard-status-pill-btn'));
     expect(pushMock).toHaveBeenCalledWith('/(tabs)/settings');
   });
 

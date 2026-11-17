@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -216,6 +217,7 @@ export default function TransactionDetailScreen() {
             onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Voltar para transações"
+            hitSlop={6}
             testID="tx-detail-back-btn"
             style={styles.backBtn}
           >
@@ -225,11 +227,20 @@ export default function TransactionDetailScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {detailQuery.isLoading ? (
             <SkeletonCard testID="tx-detail-loading" />
           ) : detailQuery.isError || !detail ? (
-            <GlassCard tone="purple" testID="tx-detail-error" contentStyle={styles.errorCard}>
+            <GlassCard
+              tone="neutral"
+              tintColor={COLORS.accent.expenseTint}
+              testID="tx-detail-error"
+              contentStyle={styles.errorCard}
+            >
               <Text style={styles.errorTitle}>Não foi possível carregar o lançamento</Text>
               <Text style={styles.errorBody}>
                 {detailQuery.error
@@ -248,7 +259,7 @@ export default function TransactionDetailScreen() {
             <>
               <GlassCard
                 variant="elevated"
-                tone={detail.amount_norm > 0 ? 'mint' : 'cyan'}
+                tone="neutral"
                 contentStyle={styles.heroCard}
               >
                 <View style={styles.badgesRow}>
@@ -288,7 +299,12 @@ export default function TransactionDetailScreen() {
               {feedback ? (
                 <GlassCard
                   variant="card"
-                  tone={feedback.tone === 'success' ? 'mint' : 'purple'}
+                  tone="neutral"
+                  tintColor={
+                    feedback.tone === 'success'
+                      ? COLORS.accent.incomeTint
+                      : COLORS.accent.expenseTint
+                  }
                   testID="tx-detail-feedback"
                   contentStyle={styles.feedbackRow}
                 >
@@ -323,7 +339,7 @@ export default function TransactionDetailScreen() {
                             selectedCategory?.group_color ||
                             selectedCategory?.color ||
                             detail.category_group_color ||
-                            COLORS.neon.cyan,
+                            COLORS.accent.ice,
                         },
                       ]}
                     />
@@ -337,7 +353,7 @@ export default function TransactionDetailScreen() {
                     </View>
                   </View>
                   <View style={styles.selectorAction}>
-                    <Tag size={14} color={COLORS.neon.cyan} />
+                    <Tag size={14} color={COLORS.accent.ice} />
                     <Text style={styles.selectorActionText}>Alterar</Text>
                     <ChevronRight size={16} color={COLORS.text.secondary} />
                   </View>
@@ -348,7 +364,7 @@ export default function TransactionDetailScreen() {
                 <View style={styles.switchRow}>
                   <View style={styles.switchTextWrap}>
                     <View style={styles.switchTitleLine}>
-                      <Sparkles size={15} color={COLORS.neon.purple} />
+                      <Sparkles size={15} color={COLORS.accent.ice} />
                       <Text style={styles.switchTitle}>Aplicar a semelhantes</Text>
                     </View>
                     <Text style={styles.switchHint}>
@@ -357,10 +373,13 @@ export default function TransactionDetailScreen() {
                   </View>
                   <Switch
                     value={applyToSimilar}
-                    onValueChange={(nextValue) => updateDraft({ applyToSimilar: nextValue })}
+                    onValueChange={(nextValue) => {
+                      void Haptics.selectionAsync().catch(() => undefined);
+                      updateDraft({ applyToSimilar: nextValue });
+                    }}
                     disabled={matchOptions.length === 0}
-                    trackColor={{ false: '#334155', true: 'rgba(168, 85, 247, 0.55)' }}
-                    thumbColor={applyToSimilar ? COLORS.neon.purple : '#CBD5E1'}
+                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(56, 189, 248, 0.45)' }}
+                    thumbColor={applyToSimilar ? COLORS.accent.ice : '#CBD5E1'}
                     testID="toggle-apply-similar"
                   />
                 </View>
@@ -373,7 +392,10 @@ export default function TransactionDetailScreen() {
                       return (
                         <Pressable
                           key={option.matchType}
-                          onPress={() => updateDraft({ matchType: option.matchType })}
+                          onPress={() => {
+                            void Haptics.selectionAsync().catch(() => undefined);
+                            updateDraft({ matchType: option.matchType });
+                          }}
                           accessibilityRole="radio"
                           accessibilityState={{ selected: active }}
                           testID={`match-option-${option.matchType}`}
@@ -400,21 +422,28 @@ export default function TransactionDetailScreen() {
                   </View>
                   <Switch
                     value={effectiveExcludedPreview}
-                    onValueChange={(nextValue) => updateDraft({ manualExcluded: nextValue })}
-                    trackColor={{ false: '#334155', true: 'rgba(34, 211, 238, 0.55)' }}
-                    thumbColor={effectiveExcludedPreview ? COLORS.neon.cyan : '#CBD5E1'}
+                    onValueChange={(nextValue) => {
+                      void Haptics.selectionAsync().catch(() => undefined);
+                      updateDraft({ manualExcluded: nextValue });
+                    }}
+                    trackColor={{ false: 'rgba(255,255,255,0.16)', true: 'rgba(56, 189, 248, 0.45)' }}
+                    thumbColor={effectiveExcludedPreview ? COLORS.accent.ice : '#CBD5E1'}
                     testID="toggle-exclude-tx"
                   />
                 </View>
 
                 {manualExcluded !== null ? (
                   <Pressable
-                    onPress={() => updateDraft({ manualExcluded: null })}
+                    onPress={() => {
+                      void Haptics.selectionAsync().catch(() => undefined);
+                      updateDraft({ manualExcluded: null });
+                    }}
                     accessibilityRole="button"
+                    hitSlop={8}
                     testID="restore-auto-exclude-btn"
                     style={styles.restoreBtn}
                   >
-                    <RotateCcw size={13} color={COLORS.neon.cyan} />
+                    <RotateCcw size={13} color={COLORS.accent.ice} />
                     <Text style={styles.restoreText}>Restaurar regra automática</Text>
                   </Pressable>
                 ) : null}
@@ -494,14 +523,14 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.glass.fill,
     borderWidth: 1,
-    borderColor: COLORS.glass.strokeStart,
+    borderColor: COLORS.glass.hairline,
   },
   headerTitle: {
     color: COLORS.text.primary,
@@ -509,7 +538,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.size.section,
   },
   headerSpacer: {
-    width: 38,
+    width: 42,
   },
   content: {
     paddingHorizontal: SPACING.lg,
@@ -597,7 +626,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   selectorActionText: {
-    color: COLORS.neon.cyan,
+    color: COLORS.accent.ice,
     fontFamily: TYPOGRAPHY.family.medium,
     fontSize: TYPOGRAPHY.size.caption,
   },
@@ -606,7 +635,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.glass.strokeEnd,
+    backgroundColor: COLORS.glass.hairlineSubtle,
   },
   switchRow: {
     flexDirection: 'row',
@@ -645,15 +674,15 @@ const styles = StyleSheet.create({
   matchChip: {
     borderRadius: GLASS_METRICS.radius.row - 4,
     borderWidth: 1,
-    borderColor: COLORS.glass.strokeEnd,
+    borderColor: COLORS.glass.hairlineSubtle,
     backgroundColor: COLORS.glass.fillSubtle,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     gap: 2,
   },
   matchChipActive: {
-    borderColor: 'rgba(168, 85, 247, 0.6)',
-    backgroundColor: COLORS.glass.tintPurple,
+    borderColor: COLORS.accent.iceBorder,
+    backgroundColor: COLORS.accent.iceTint,
   },
   matchLabel: {
     color: COLORS.text.primary,
@@ -670,9 +699,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
+    paddingVertical: 4,
   },
   restoreText: {
-    color: COLORS.neon.cyan,
+    color: COLORS.accent.ice,
     fontFamily: TYPOGRAPHY.family.medium,
     fontSize: TYPOGRAPHY.size.caption,
   },
