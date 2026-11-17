@@ -1,10 +1,24 @@
 # Guia de Setup — Gerenciador de Gastos (Inter via Pluggy)
 
-Passo a passo para configurar contas, credenciais, ambiente local e build Android sem expor segredos no Git.
+Passo a passo para rodar o app em **Modo Demo 12M** (sem contas externas) ou configurar o ambiente completo com Pluggy, Supabase e build Android sem expor segredos no Git.
 
 ---
 
-## 1. Pré-requisitos no PC
+## 0. Modo Demo 12M (Rápido — Sem Backend ou Chaves)
+
+Para testar a interface Liquid Glass, os gráficos de `/analytics` e o Modo Privacidade imediatamente após clonar o repositório:
+
+```bash
+npm ci
+npm ci --prefix mobile
+npm start
+```
+
+Ao abrir o aplicativo em um dev build ou emulador Android sem `.env` configurado, toque em **"Explorar em Modo Demo (12 meses)"** na tela inicial (ou no ícone de frasco no cabeçalho do Painel) para navegar com 12 meses de dados sintéticos em memória.
+
+---
+
+## 1. Pré-requisitos no PC (Ambiente Completo)
 
 - **Node.js 20+** e **npm**
 - **Docker Desktop** (obrigatório para o Supabase local e testes `T4`/`T5`)

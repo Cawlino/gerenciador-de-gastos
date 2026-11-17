@@ -37,8 +37,8 @@ Ou copie o arquivo `app-release.apk` para o aparelho e abra pelo gerenciador de 
 
 - [x] `.gitignore` cobre `.env`, `.env.*`, `*.jks`, `*.keystore`, `credentials.json`, `fixtures/real/`, `supabase/.temp/` e `mobile/android/`
 - [x] Nenhum arquivo `.env` real versionado no Git (`git ls-files .env*` retorna apenas `.env.example`)
-- [ ] Executar `gitleaks git . --no-banner` e confirmar **0 findings**
-- [ ] Executar `npm run test:t1` (`check-pii` + `secretlint` + `gitleaks`) após o último commit
+- [x] `gitleaks git . --no-banner` executado com **0 findings**
+- [x] `npm run test:t1` (`check-pii` + `secretlint` + `gitleaks`) aprovado após o último commit
 - [ ] Confirmar CI verde (`.github/workflows/ci.yml`: `T1–T3, T7` e `T4–T5`)
-- [x] Projeto remoto `<SUPABASE_PROJECT_REF>` com webhook ativo e `pg_cron` diário (`finance-daily-sync`)
-- [ ] Decisão do proprietário sobre manter o repositório **privado** (`Cawlino/gerenciador-de-gastos`) ou torná-lo público após revisão final do histórico
+- [x] Projeto remoto (`<SUPABASE_PROJECT_REF>` via `.env`) com webhook ativo e `pg_cron` diário (`finance-daily-sync`)
+- [x] Repositório `Cawlino/gerenciador-de-gastos` sanitizado (histórico e arquivos) e preparado para publicação pública segura

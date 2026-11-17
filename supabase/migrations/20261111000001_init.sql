@@ -1,5 +1,5 @@
 -- 0001_init.sql — Schema isolado `finance` (ADR-006)
--- Mantem `public` e o schema `public` 100% intacto.
+-- Mantem o schema `public` 100% intacto.
 
 CREATE SCHEMA IF NOT EXISTS finance;
 

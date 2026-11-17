@@ -14,42 +14,66 @@ import { resolve } from "node:path";
 const stagedOnly = process.argv.includes("--staged");
 
 function loadEnvValues() {
-  const envPath = resolve(process.cwd(), ".env");
+  const envPaths = [resolve(process.cwd(), ".env"), resolve(process.cwd(), "mobile", ".env")];
   const blocked = new Set();
-  if (!existsSync(envPath)) return blocked;
 
-  const raw = readFileSync(envPath, "utf8");
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim();
-    if (!val) continue;
+  const sensitiveKeys = new Set([
+    "PLUGGY_CLIENT_ID",
+    "PLUGGY_CLIENT_SECRET",
+    "PLUGGY_ITEM_ID",
+    "APP_KEY",
+    "WEBHOOK_TOKEN",
+    "SUPABASE_PROJECT_REF",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_DB_PASSWORD",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_APP_KEY",
+  ]);
 
-    if (key === "PII_GUARD") {
-      for (const item of val.split(",")) {
-        const clean = item.trim();
-        if (clean.length >= 4) blocked.add(clean);
+  for (const envPath of envPaths) {
+    if (!existsSync(envPath)) continue;
+    const raw = readFileSync(envPath, "utf8");
+    for (const line of raw.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim();
+      if (!val) continue;
+
+      if (key === "PII_GUARD") {
+        for (const item of val.split(",")) {
+          const clean = item.trim();
+          if (clean.length >= 4) blocked.add(clean);
+        }
+      } else if (sensitiveKeys.has(key) && val.length >= 6) {
+        blocked.add(val);
       }
-    } else if (
-      [
-        "PLUGGY_CLIENT_SECRET",
-        "PLUGGY_ITEM_ID",
-        "APP_KEY",
-        "WEBHOOK_TOKEN",
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_DB_PASSWORD",
-        "EXPO_PUBLIC_APP_KEY",
-      ].includes(key) &&
-      val.length >= 6
-    ) {
-      blocked.add(val);
     }
   }
   return blocked;
 }
+
+const PATTERN_GUARDS = [
+  {
+    name: "Supabase project URL real",
+    regex: /https:\/\/(?!(?:your-project-ref|example|proj)\b)[a-z0-9]{16,32}\.supabase\.co/i,
+  },
+  {
+    name: "E-mail pessoal Gmail",
+    regex: /[a-zA-Z0-9._%+-]+@gmail\.com\b/i,
+  },
+  {
+    name: "IP privado LAN (192.168.x.x)",
+    regex: /\b192\.168\.\d{1,3}\.\d{1,3}\b/,
+  },
+  {
+    name: "Serial físico ADB / mDNS",
+    regex: /(?:\badb-[A-Z0-9]{6,}\b|adb-[A-Za-z0-9_-]+\._adb-tls-connect\._tcp)/,
+  },
+];
 
 function getTargetFiles() {
   const cmd = stagedOnly
@@ -60,8 +84,8 @@ function getTargetFiles() {
   return out.split(/\r?\n/).filter(Boolean);
 }
 
-const IGNORE_EXT = /\.(png|jpe?g|gif|webp|ico|ttf|otf|woff2?|keystore|jks|apk|aab|lock)$/i;
-const IGNORE_PATHS = /^(package-lock\.json|mobile\/package-lock\.json)$/;
+const IGNORE_EXT = /\.(png|jpe?g|gif|webp|ico|ttf|otf|woff2?|keystore|jks|apk|aab|mp4|mov|lock)$/i;
+const IGNORE_PATHS = /^(package-lock\.json|mobile\/package-lock\.json|scripts\/check-pii\.mjs)$/;
 
 const blockedValues = Array.from(loadEnvValues());
 const files = getTargetFiles().filter(
@@ -83,6 +107,15 @@ for (const file of files) {
       findings.push({
         file,
         reason: `Contém valor bloqueado (len=${secret.length}, prefix=${secret.slice(0, 2)}***)`,
+      });
+    }
+  }
+
+  for (const guard of PATTERN_GUARDS) {
+    if (guard.regex.test(content)) {
+      findings.push({
+        file,
+        reason: `Padrão sensível detectado (${guard.name})`,
       });
     }
   }

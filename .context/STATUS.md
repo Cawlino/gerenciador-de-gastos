@@ -1,22 +1,23 @@
-# STATUS DO PROJETO — GerenciadorDeGastos
+# STATUS — Gerenciador de Gastos
 
-- **Última Atualização:** 2026-11-12 13:06 (America/Sao_Paulo)
-- **Fase Atual:** **Fase 10 (Entrega) concluída** — **9/9** em [fase-10.md](file:///c:/Users/danie/%C3%81rea%20de%20Trabalho/GerenciadorDeGastos/docs/test-reports/fase-10.md); ambiente local desligado e entrega consolidada em `origin/main`
+- **Última Atualização:** 2026-11-16T21:33:00-03:00
+- **Fase Atual:** Repositório sanitizado, documentado como vitrine técnica de engenharia e publicado com segurança (`T1–T3` + `T7` verdes, `0` dados sensíveis ou PII no código e histórico Git).
 
 ## 📍 Ponto Exato de Parada / Onde Estamos
-- **Processos locais encerrados:** emulador Android desligado e stack Supabase local parada (`npx supabase stop`), sem containers `supabase_` ativos.
-- **Bateria final Fase 10 (`T1–T9`) aprovada 9/9:** [fase-10.md](file:///c:/Users/danie/%C3%81rea%20de%20Trabalho/GerenciadorDeGastos/docs/test-reports/fase-10.md) (`check-pii`, `secretlint`, `gitleaks`, `tsc/eslint/deno`, `pgTAP` 37 testes, `deno test` 11 testes, Vitest integração 9 testes, contrato Pluggy 4 testes, `jest-expo` 10 suítes / 53 testes, Maestro 3/3 e smoke produção `T9`).
-- **APK release final standalone gerado:** `mobile/android/app/build/outputs/apk/release/app-release.apk` compilado com ABIs `arm64-v8a,x86_64` (`BUILD SUCCESSFUL` em 14m 7s) e validado diretamente na `T8`.
-- **Repositório Git:** `Cawlino/gerenciador-de-gastos` (**privado**) atualizado em `origin/main` com todas as entregas das Fases 6–10.
+- **Blindagem de Segurança & Privacidade (`ADR-023`):**
+  - `scripts/check-pii.mjs` ampliado para bloquear valores de `.env` e `mobile/.env` (`SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `EXPO_PUBLIC_API_URL`, `PLUGGY_CLIENT_ID`), além de regex para URLs Supabase reais, Gmail, IPs LAN `192.168.x.x` e seriais ADB.
+  - `.gitignore` atualizado para ignorar `*.apk`, `*.aab`, `*.mp4`, `*.mov` e `mobile/.env*`.
+  - `.context/`, `docs/RELEASE_CHECKLIST.md` e comentário inicial da migration `0001_init` 100% sanitizados.
+- **Experiência Pública & Vitrine para Recrutadores:**
+  - Adicionado botão **"Explorar em Modo Demo (12 meses)"** no estado de fallback sem backend (`index.tsx`, `transactions.tsx`, `settings.tsx`, `analytics.tsx`) + teste unitário cobrindo o fluxo.
+  - `README.md`, `docs/ARCHITECTURE.md`, `docs/SETUP.md` e `SECURITY.md` estruturados com a trajetória completa de engenharia (Marcos 1–4, motor `R1–R10`, shaders 120Hz e pirâmide `T1–T9`).
 
 ## ✅ Tarefas Concluídas Recentemente
-- Parada completa do ambiente local (`emulator-up.mjs --stop` + `npx supabase stop`)
-- Build final release universal (`arm64-v8a,x86_64`), cobertura `screens-connect.test.tsx`, [README.md](file:///c:/Users/danie/%C3%81rea%20de%20Trabalho/GerenciadorDeGastos/README.md) e [RELEASE_CHECKLIST.md](file:///c:/Users/danie/%C3%81rea%20de%20Trabalho/GerenciadorDeGastos/docs/RELEASE_CHECKLIST.md)
-- Bateria cumulativa `npm run test:all -- --phase 10 --with-emulator --cold` aprovada **9/9** (`docs/test-reports/fase-10.md`)
-- Commit e push das Fases 6–10 para `origin/main`
+- Sanitização de arquivos/histórico Git, reforço de `.gitignore`/`check-pii.mjs` e fallback Demo 12M (`ADR-023`).
+- Documentação completa para recrutadores e preparação do repositório público `Cawlino/gerenciador-de-gastos`.
 
-## ⏳ Tarefas em Andamento / Pendentes
-- Instalação do APK final no celular físico e conferência manual com o app do Banco Inter seguindo [RELEASE_CHECKLIST.md](file:///c:/Users/danie/%C3%81rea%20de%20Trabalho/GerenciadorDeGastos/docs/RELEASE_CHECKLIST.md)
+## ⏳ Tarefas em Andamento
+- Nenhuma pendência técnica aberta no repositório.
 
 ## 🎯 Próxima Ação Imediata
-Instalar `mobile/android/app/build/outputs/apk/release/app-release.apk` no celular e concluir a conferência manual do checklist de campo.
+- Capturar screenshots/vídeo em **Modo Demo 12M** para acompanhar o post do LinkedIn e opcionalmente incluir em `docs/assets/` do `README.md`.

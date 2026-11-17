@@ -7,7 +7,7 @@ App Android pessoal para controle de gastos, conectado à conta corrente e cart�
 - **Mobile (`mobile/`):** Expo SDK 58 (`~58.0.24`), Expo Router, React 19.3, React Native 0.88 (New Architecture), TypeScript 6.0, `@shopify/react-native-skia`, `react-native-liquid-glassmorphism` (AGSL/Liquid Glass), `expo-blur`, `react-native-reanimated`, `@tanstack/react-query`, `react-native-gifted-charts`, `react-native-pluggy-connect`.
 - **Backend (`supabase/`):** Supabase Postgres + RLS + Edge Functions (Deno 2 + Hono), API Pluggy v2 (`/v2/transactions` com cursor `next`), webhook + `pg_cron`.
 - **Testes (`scripts/test-all.mjs`):** Bateria cumulativa T1–T9 (secretlint/gitleaks/check-pii, tsc/eslint/deno, deno test, pgTAP, integração Vitest+mock, contrato read-only, jest-expo, Maestro Wi-Fi ADB, smoke produção).
-- **Repositório:** `Cawlino/gerenciador-de-gastos` (GitHub privado durante dev; checklist antes de publicar).
+- **Repositório:** `Cawlino/gerenciador-de-gastos` (GitHub público — vitrine técnica sanitizada, 0 dados pessoais ou segredos, com Modo Demo 12M embutido).
 
 ## Mapa de pastas
 - `.context/` e `AGENTS.md` — memória persistente e ADRs

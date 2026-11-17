@@ -2,9 +2,11 @@
   "name": "gerenciador-de-gastos",
   "version": "0.1.0",
   "private": true,
-  "description": "App pessoal de controle de gastos integrado ao Banco Inter via Pluggy (Meu Pluggy) e Supabase",
+  "description": "App Android de finanças pessoais com Open Finance (Banco Inter via Pluggy), Supabase RLS, UI Liquid Glass em Skia 120Hz, Central Analytics e Modo Demo 12M",
   "license": "MIT",
   "scripts": {
+    "start": "node scripts/start-dev.mjs",
+    "dev": "node scripts/start-dev.mjs",
     "prepare": "husky",
     "gen:fixtures": "node scripts/gen-fixtures.mjs",
     "emulator:up": "node scripts/emulator-up.mjs",
