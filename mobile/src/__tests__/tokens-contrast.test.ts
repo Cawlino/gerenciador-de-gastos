@@ -26,9 +26,14 @@ describe('Design tokens & contraste WCAG AA', () => {
       { name: 'bg.deep', bg: COLORS.bg.deep, backdrop: COLORS.bg.deep },
       { name: 'bg.mid', bg: COLORS.bg.mid, backdrop: COLORS.bg.deep },
       { name: 'bg.high', bg: COLORS.bg.high, backdrop: COLORS.bg.deep },
+      { name: 'bg.abyss', bg: COLORS.bg.abyss, backdrop: COLORS.bg.abyss },
+      { name: 'bg.navy', bg: COLORS.bg.navy, backdrop: COLORS.bg.abyss },
+      { name: 'bg.sapphire', bg: COLORS.bg.sapphire, backdrop: COLORS.bg.abyss },
       { name: 'glass.fill/mid', bg: COLORS.glass.fill, backdrop: COLORS.bg.mid },
       { name: 'glass.fill/high', bg: COLORS.glass.fill, backdrop: COLORS.bg.high },
-      { name: 'glass.fallbackFill', bg: COLORS.glass.fallbackFill, backdrop: COLORS.bg.deep },
+      { name: 'glass.fill/navy', bg: COLORS.glass.fill, backdrop: COLORS.bg.navy },
+      { name: 'glass.fill/sapphire', bg: COLORS.glass.fill, backdrop: COLORS.bg.sapphire },
+      { name: 'glass.fallbackFill', bg: COLORS.glass.fallbackFill, backdrop: COLORS.bg.abyss },
     ];
 
     for (const surface of surfaces) {
@@ -39,9 +44,14 @@ describe('Design tokens & contraste WCAG AA', () => {
     }
   });
 
-  it('garante contraste >= 4.5:1 para cores semânticas de receita, despesa e ciano', () => {
-    for (const accent of [COLORS.semantic.income, COLORS.semantic.expense, COLORS.neon.cyan]) {
-      const ratio = contrastRatio(accent, COLORS.glass.fill, COLORS.bg.high);
+  it('garante contraste >= 4.5:1 para cores semânticas de receita, despesa, ciano e ice-blue', () => {
+    for (const accent of [
+      COLORS.semantic.income,
+      COLORS.semantic.expense,
+      COLORS.neon.cyan,
+      COLORS.accent.ice,
+    ]) {
+      const ratio = contrastRatio(accent, COLORS.glass.fill, COLORS.bg.sapphire);
       expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
   });

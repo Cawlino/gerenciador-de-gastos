@@ -1,15 +1,17 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import {
   AmountText,
   DonutChart,
   GlassBackground,
   GlassCard,
   GlassTabBar,
+  LiquidPullRefresh,
   MonthSwitcher,
   NeonButton,
   SkeletonCard,
@@ -17,6 +19,7 @@ import {
   StatusPill,
   TransactionRow,
 } from '../components';
+import { computeWanderingAuras } from '../theme/MotionContext';
 import PlaygroundScreen from '../../app/playground';
 
 describe('Componentes Liquid Glass', () => {
@@ -34,22 +37,24 @@ describe('Componentes Liquid Glass', () => {
     expect(screen.getByText('Conteúdo interno')).toBeTruthy();
   });
 
-  it('ativa camada shader SkSL após medição de layout e respeita forceFallback', async () => {
+  it('ativa camada LiquidGlassView nativa e respeita forceFallback e surface="lightweight"', async () => {
     const { rerender } = await render(
       <GlassCard testID="card">
         <Text>Cartão vidro</Text>
       </GlassCard>,
     );
 
-    expect(screen.getByTestId('card-fallback')).toBeTruthy();
-
-    await fireEvent(screen.getByTestId('card'), 'layout', {
-      nativeEvent: { layout: { width: 320, height: 140 } },
-    });
-    expect(screen.getByTestId('card-shader')).toBeTruthy();
+    expect(screen.getByTestId('card-liquid')).toBeTruthy();
 
     await rerender(
       <GlassCard testID="card" forceFallback>
+        <Text>Cartão vidro</Text>
+      </GlassCard>,
+    );
+    expect(screen.getByTestId('card-fallback')).toBeTruthy();
+
+    await rerender(
+      <GlassCard testID="card" surface="lightweight">
         <Text>Cartão vidro</Text>
       </GlassCard>,
     );
@@ -230,9 +235,69 @@ describe('Componentes Liquid Glass', () => {
     expect(screen.getByText('Playground Liquid Glass')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('toggle-fallback-btn'));
-    expect(screen.getByText('Fallback Blur')).toBeTruthy();
+    expect(screen.getByText('Fallback Leve')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('toggle-skeleton-btn'));
     expect(screen.getByTestId('playground-skeletons')).toBeTruthy();
+  });
+
+  it('computeWanderingAuras acompanha tanto pull positivo quanto overscroll negativo', () => {
+    const rest = computeWanderingAuras(0, 0, 0, 0, 0, 390, 840, 0);
+    const pulledDown = computeWanderingAuras(0, 0, 60, 0, 0, 390, 840, 0);
+    const bottomBounce = computeWanderingAuras(720, 0, -50, 0, 0, 390, 840, 0);
+    const neutralBottom = computeWanderingAuras(720, 0, 0, 0, 0, 390, 840, 0);
+
+    expect(pulledDown.c1y).toBeGreaterThan(rest.c1y);
+    expect(bottomBounce.c1y).toBeLessThan(neutralBottom.c1y);
+    expect(bottomBounce.c2y).toBeLessThan(neutralBottom.c2y);
+  });
+
+  it('LiquidPullRefresh fornece bindings de overscroll/wrapScroll e encaminha scroll sem erros', async () => {
+    const onRefresh = jest.fn();
+    const onUserScroll = jest.fn();
+
+    function Host() {
+      const sv = useSharedValue(0);
+      return (
+        <LiquidPullRefresh refreshing={false} onRefresh={onRefresh} scrollYSV={sv} testID="lpr">
+          {({ overScrollMode, bounces, onLayout, onContentSizeChange, wrapScroll }) => (
+            <ScrollView
+              testID="lpr-scroll"
+              overScrollMode={overScrollMode}
+              bounces={bounces}
+              onLayout={onLayout}
+              onContentSizeChange={onContentSizeChange}
+              onScroll={wrapScroll((e) => {
+                sv.set(e.nativeEvent.contentOffset.y);
+                onUserScroll(e.nativeEvent.contentOffset.y);
+              })}
+            >
+              <Text>Conteúdo rolável</Text>
+            </ScrollView>
+          )}
+        </LiquidPullRefresh>
+      );
+    }
+
+    await render(<Host />);
+    const scroll = screen.getByTestId('lpr-scroll');
+    expect(scroll.props.overScrollMode).toBe('never');
+    expect(scroll.props.bounces).toBe(false);
+
+    await fireEvent(scroll, 'layout', { nativeEvent: { layout: { width: 390, height: 600 } } });
+    await fireEvent(scroll, 'contentSizeChange', 390, 1200);
+    await fireEvent.scroll(scroll, {
+      nativeEvent: {
+        contentOffset: { x: 0, y: 580 },
+        contentSize: { width: 390, height: 1200 },
+        layoutMeasurement: { width: 390, height: 600 },
+      },
+    });
+    expect(onUserScroll).toHaveBeenCalledWith(580);
+
+    await fireEvent(screen.getByTestId('lpr'), 'accessibilityAction', {
+      nativeEvent: { actionName: 'activate' },
+    });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 });

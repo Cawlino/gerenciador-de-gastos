@@ -1,20 +1,17 @@
-import React, { type ReactNode } from 'react';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { type ReactNode, useCallback } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  type StyleProp,
   StyleSheet,
   Text,
   View,
-  type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import { COLORS, GLASS_METRICS, SPACING, TYPOGRAPHY } from '../theme/tokens';
+
+import { COLORS, SPACING, TYPOGRAPHY } from '../theme/tokens';
 
 export type NeonButtonTone = 'cyan' | 'purple' | 'mint' | 'danger' | 'neutral';
 
@@ -34,44 +31,55 @@ export interface NeonButtonProps {
 
 const TONE_MAP: Record<
   NeonButtonTone,
-  { bg: string; border: string; glow: string; text: string }
+  {
+    grad: readonly [string, string];
+    borderTop: string;
+    borderSide: string;
+    accent: string;
+    text: string;
+  }
 > = {
   cyan: {
-    bg: 'rgba(34, 211, 238, 0.14)',
-    border: 'rgba(34, 211, 238, 0.58)',
-    glow: COLORS.neon.cyan,
+    grad: ['rgba(30, 128, 224, 0.38)', 'rgba(10, 42, 92, 0.56)'],
+    borderTop: 'rgba(186, 230, 253, 0.55)',
+    borderSide: 'rgba(56, 189, 248, 0.38)',
+    accent: COLORS.accent.ice,
     text: COLORS.text.primary,
   },
   purple: {
-    bg: 'rgba(168, 85, 247, 0.16)',
-    border: 'rgba(168, 85, 247, 0.58)',
-    glow: COLORS.neon.purple,
+    grad: ['rgba(128, 64, 218, 0.36)', 'rgba(34, 16, 68, 0.54)'],
+    borderTop: 'rgba(233, 213, 255, 0.50)',
+    borderSide: 'rgba(168, 85, 247, 0.38)',
+    accent: COLORS.orb.purpleSolid,
     text: COLORS.text.primary,
   },
   mint: {
-    bg: 'rgba(52, 211, 153, 0.14)',
-    border: 'rgba(52, 211, 153, 0.55)',
-    glow: COLORS.neon.mint,
+    grad: ['rgba(16, 148, 112, 0.34)', 'rgba(8, 44, 38, 0.54)'],
+    borderTop: 'rgba(167, 243, 208, 0.50)',
+    borderSide: 'rgba(52, 211, 153, 0.38)',
+    accent: COLORS.semantic.income,
     text: COLORS.text.primary,
   },
   danger: {
-    bg: 'rgba(251, 113, 133, 0.14)',
-    border: 'rgba(251, 113, 133, 0.55)',
-    glow: COLORS.semantic.expense,
+    grad: ['rgba(205, 58, 72, 0.34)', 'rgba(58, 14, 24, 0.56)'],
+    borderTop: 'rgba(254, 202, 202, 0.50)',
+    borderSide: 'rgba(248, 113, 113, 0.40)',
+    accent: COLORS.semantic.expense,
     text: COLORS.text.primary,
   },
   neutral: {
-    bg: 'rgba(255, 255, 255, 0.08)',
-    border: 'rgba(255, 255, 255, 0.24)',
-    glow: '#FFFFFF',
+    grad: ['rgba(34, 58, 108, 0.32)', 'rgba(10, 20, 44, 0.54)'],
+    borderTop: 'rgba(224, 242, 255, 0.42)',
+    borderSide: 'rgba(148, 186, 245, 0.24)',
+    accent: COLORS.accent.ice,
     text: COLORS.text.primary,
   },
 };
 
 /**
- * Botão cápsula translúcido com borda neon e feedback tátil ao toque.
+ * Botão translúcido com chanfro cristalino em GPU (LinearGradient + borda óptica sem captura em CPU).
  */
-export function NeonButton({
+function NeonButtonImpl({
   label,
   onPress,
   tone = 'cyan',
@@ -79,113 +87,95 @@ export function NeonButton({
   loading = false,
   disabled = false,
   fullWidth = false,
-  size = 'md',
+  size = 'lg',
   accessibilityLabel,
   style,
   testID,
 }: NeonButtonProps) {
-  const scale = useSharedValue(1);
   const palette = TONE_MAP[tone];
-  const isInactive = disabled || loading;
+  const isDisabled = disabled || loading;
+  const height = size === 'lg' ? 52 : 44;
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    if (isInactive) return;
-    scale.set(withSpring(0.97, { damping: 18, stiffness: 320 }));
-  };
-
-  const handlePressOut = () => {
-    scale.set(withSpring(1, { damping: 18, stiffness: 320 }));
-  };
-
-  const handlePress = () => {
-    if (isInactive) return;
+  const handlePress = useCallback(() => {
+    if (isDisabled) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
     onPress?.();
-  };
+  }, [isDisabled, onPress]);
 
   return (
-    <Animated.View style={[animatedStyle, fullWidth ? styles.fullWidth : null, style]}>
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={isInactive}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? label}
-        accessibilityState={{ disabled: isInactive, busy: loading }}
-        testID={testID}
-        style={[
-          styles.button,
-          size === 'lg' ? styles.buttonLg : styles.buttonMd,
-          {
-            backgroundColor: palette.bg,
-            borderColor: palette.border,
-            shadowColor: palette.glow,
-            opacity: isInactive ? 0.55 : 1,
-          },
-        ]}
+    <Pressable
+      onPress={handlePress}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.outer,
+        fullWidth ? styles.fullWidth : null,
+        {
+          minHeight: height,
+          borderColor: palette.borderSide,
+          borderTopColor: palette.borderTop,
+          borderLeftColor: palette.borderTop,
+        },
+        pressed && !isDisabled ? styles.pressed : null,
+        isDisabled ? styles.disabled : null,
+        style,
+      ]}
+    >
+      <LinearGradient
+        colors={palette.grad}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={[styles.inner, { minHeight: height - 3 }]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={palette.glow} />
+          <ActivityIndicator size="small" color={palette.accent} />
         ) : icon ? (
-          <View style={styles.iconWrap}>{icon}</View>
+          <View style={styles.iconSlot}>{icon}</View>
         ) : null}
-        <Text
-          style={[
-            styles.label,
-            size === 'lg' ? styles.labelLg : null,
-            { color: palette.text },
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.label, { color: palette.text }]} numberOfLines={1}>
           {label}
         </Text>
-      </Pressable>
-    </Animated.View>
+      </LinearGradient>
+    </Pressable>
   );
 }
 
+export const NeonButton = React.memo(NeonButtonImpl);
+
 const styles = StyleSheet.create({
-  fullWidth: {
-    width: '100%',
+  outer: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(8, 16, 36, 0.42)',
   },
-  button: {
+  inner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: GLASS_METRICS.radius.pill,
-    borderWidth: 1,
     gap: SPACING.sm,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
+    paddingHorizontal: SPACING.xl,
   },
-  buttonMd: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm + 3,
-    minHeight: 42,
+  fullWidth: {
+    width: '100%',
   },
-  buttonLg: {
-    paddingHorizontal: SPACING.xxl,
-    paddingVertical: SPACING.md + 2,
-    minHeight: 50,
+  pressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
-  iconWrap: {
+  disabled: {
+    opacity: 0.48,
+  },
+  iconSlot: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
     fontFamily: TYPOGRAPHY.family.semibold,
     fontSize: TYPOGRAPHY.size.body,
-    lineHeight: TYPOGRAPHY.lineHeight.body,
-  },
-  labelLg: {
-    fontSize: TYPOGRAPHY.size.section,
-    lineHeight: TYPOGRAPHY.lineHeight.section,
+    letterSpacing: 0.15,
   },
 });

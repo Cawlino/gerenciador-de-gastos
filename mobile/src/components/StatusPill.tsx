@@ -18,41 +18,41 @@ const VARIANT_COLORS: Record<
   { bg: string; border: string; text: string; dot: string }
 > = {
   success: {
-    bg: 'rgba(52, 211, 153, 0.14)',
-    border: 'rgba(52, 211, 153, 0.38)',
+    bg: 'rgba(52, 211, 153, 0.12)',
+    border: 'rgba(52, 211, 153, 0.30)',
     text: COLORS.semantic.income,
     dot: COLORS.semantic.income,
   },
   warning: {
-    bg: 'rgba(251, 191, 36, 0.14)',
-    border: 'rgba(251, 191, 36, 0.38)',
+    bg: 'rgba(251, 191, 36, 0.12)',
+    border: 'rgba(251, 191, 36, 0.30)',
     text: COLORS.semantic.warning,
     dot: COLORS.semantic.warning,
   },
   error: {
-    bg: 'rgba(251, 113, 133, 0.14)',
-    border: 'rgba(251, 113, 133, 0.38)',
+    bg: 'rgba(251, 113, 133, 0.12)',
+    border: 'rgba(251, 113, 133, 0.30)',
     text: COLORS.semantic.error,
     dot: COLORS.semantic.error,
   },
   info: {
-    bg: 'rgba(34, 211, 238, 0.14)',
-    border: 'rgba(34, 211, 238, 0.38)',
+    bg: 'rgba(56, 189, 248, 0.12)',
+    border: 'rgba(56, 189, 248, 0.30)',
     text: COLORS.semantic.info,
     dot: COLORS.semantic.info,
   },
   muted: {
-    bg: 'rgba(139, 151, 173, 0.14)',
-    border: 'rgba(139, 151, 173, 0.30)',
+    bg: 'rgba(255, 255, 255, 0.06)',
+    border: 'rgba(255, 255, 255, 0.14)',
     text: COLORS.text.secondary,
     dot: COLORS.text.secondary,
   },
 };
 
 /**
- * Cápsula de status translúcida para badges como pendente, ignorado ou conexão.
+ * Cápsula de status translúcida e limpa para badges de estado ou conexão.
  */
-export function StatusPill({
+function StatusPillImpl({
   label,
   variant = 'info',
   showDot = true,
@@ -86,6 +86,8 @@ export function StatusPill({
     </View>
   );
 }
+
+export const StatusPill = React.memo(StatusPillImpl);
 
 const styles = StyleSheet.create({
   pill: {

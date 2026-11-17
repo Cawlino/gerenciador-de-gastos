@@ -56,16 +56,8 @@ appId: com.cawlino.gerenciadorgastos
     timeout: 20000
     waitToSettleTimeoutMs: 500
 - assertVisible: "Gastos por Categoria"
-- scrollUntilVisible:
-    element:
-      id: "dashboard-view-transactions-btn"
-    direction: DOWN
-    speed: 55
-    visibilityPercentage: 80
-    timeout: 15000
-    waitToSettleTimeoutMs: 500
 - tapOn:
-    id: "dashboard-view-transactions-btn"
+    id: "dashboard-donut-see-all"
     retryTapIfNoChange: false
     waitToSettleTimeoutMs: 500
 - extendedWaitUntil:

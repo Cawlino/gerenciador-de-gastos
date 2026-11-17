@@ -7,6 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import {
   Car,
   CreditCard,
@@ -79,47 +80,42 @@ function renderCategoryIcon(categoryName: string | null | undefined, color: stri
 }
 
 /**
- * Linha compacta (raio 18) de transação com ícone de categoria, hora SP e badges de estado.
+ * Linha minimalista (vidro leve translúcido) com ícone neutro, hora SP e valores tabulares.
  */
-export function TransactionRow({
+function TransactionRowImpl({
   item,
   onPress,
   style,
   testID,
 }: TransactionRowProps) {
-  const accent = item.categoryColor ?? (item.amountNorm > 0 ? COLORS.neon.mint : COLORS.neon.cyan);
   const excluded = Boolean(item.effectiveExcluded);
   const isPending = item.status === 'PENDING';
   const categoryLabel = item.categoryName?.trim() || 'Sem categoria';
   const timeLabel = formatTimeSP(item.date);
-  const subtitleParts = [categoryLabel];
-  if (item.accountLabel?.trim()) {
-    subtitleParts.push(item.accountLabel.trim());
-  }
-  subtitleParts.push(timeLabel);
-  const subtitleText = subtitleParts.join(' · ');
+  const subtitleText = item.accountLabel?.trim()
+    ? `${categoryLabel} · ${item.accountLabel.trim()} · ${timeLabel}`
+    : `${categoryLabel} · ${timeLabel}`;
+  const iconColor = excluded ? COLORS.text.secondary : '#D7E2F3';
+
+  const handlePress = React.useCallback(() => {
+    if (!onPress) return;
+    void Haptics.selectionAsync().catch(() => undefined);
+    onPress(item);
+  }, [item, onPress]);
 
   const rowContent = (
     <GlassCard
       variant="row"
+      surface="lightweight"
       padding={SPACING.md + 2}
-      style={excluded ? styles.excludedCard : null}
       contentStyle={styles.row}
     >
-      <View
-        style={[
-          styles.avatar,
-          {
-            borderColor: `${accent}55`,
-            backgroundColor: `${accent}1A`,
-          },
-        ]}
-      >
-        {renderCategoryIcon(item.categoryName, accent)}
+      <View style={styles.avatar}>
+        {renderCategoryIcon(item.categoryName, iconColor)}
       </View>
 
       <View style={styles.main}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, excluded ? styles.titleExcluded : null]} numberOfLines={1}>
           {item.description}
         </Text>
         <View style={styles.metaRow}>
@@ -161,7 +157,7 @@ export function TransactionRow({
 
   return (
     <Pressable
-      onPress={() => onPress(item)}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`${item.description}, ${categoryLabel}`}
       style={({ pressed }) => [style, pressed ? styles.pressed : null]}
@@ -172,10 +168,9 @@ export function TransactionRow({
   );
 }
 
+export const TransactionRow = React.memo(TransactionRowImpl);
+
 const styles = StyleSheet.create({
-  excludedCard: {
-    opacity: 0.58,
-  },
   pressed: {
     opacity: 0.86,
   },
@@ -189,6 +184,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: GLASS_METRICS.radius.row - 4,
     borderWidth: 1,
+    borderColor: COLORS.glass.hairlineSubtle,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -201,6 +198,9 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.family.medium,
     fontSize: TYPOGRAPHY.size.body,
     lineHeight: TYPOGRAPHY.lineHeight.body,
+  },
+  titleExcluded: {
+    color: COLORS.text.secondary,
   },
   metaRow: {
     flexDirection: 'row',

@@ -108,7 +108,7 @@ export function parseAdbDevices(adbPath, env) {
   return {
     online: lines.filter((l) => /\s+device$/.test(l)).map((l) => l.split(/\s+/)[0]),
     hasPhantomOfflineEmu: lines.some((l) => /^emulator-\d+\s+offline$/.test(l)),
-    hasRemoteTcp: lines.some((l) => /^\d+\.\d+\.\d+\.\d+:\d+\s+/.test(l)),
+    hasRemoteTcp: lines.some((l) => /^(\d+\.\d+\.\d+\.\d+:\d+|[^\s]+\._adb-tls-connect\._tcp)\s+/.test(l)),
   };
 }
 
